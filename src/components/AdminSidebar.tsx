@@ -78,14 +78,16 @@ export function AdminSidebar() {
     if (path === "/admin") {
       return currentPath === "/admin";
     }
-    return currentPath.startsWith(path);
+    return currentPath === path || currentPath.startsWith(path + "/");
   };
 
   const getNavClass = (path: string) => {
     const active = isActive(path);
-    return active
-      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-      : "hover:bg-sidebar-accent/50 text-sidebar-foreground hover:text-sidebar-accent-foreground";
+    return `flex items-center px-3 py-2 rounded-lg transition-colors ${
+      active
+        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+        : "hover:bg-sidebar-accent/50 text-sidebar-foreground hover:text-sidebar-accent-foreground"
+    }`;
   };
 
   return (
@@ -130,9 +132,7 @@ export function AdminSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
-                      className={`flex items-center px-3 py-2 rounded-lg transition-colors ${getNavClass(
-                        item.url
-                      )}`}
+                      className={getNavClass(item.url)}
                     >
                       <item.icon className={`w-5 h-5 flex-shrink-0 ${open ? "mr-3" : ""}`} />
                       {open && (
@@ -170,9 +170,7 @@ export function AdminSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
-                      className={`flex items-center px-3 py-2 rounded-lg transition-colors ${getNavClass(
-                        item.url
-                      )}`}
+                      className={getNavClass(item.url)}
                     >
                       <item.icon className={`w-5 h-5 flex-shrink-0 ${open ? "mr-3" : ""}`} />
                       {open && <span>{item.title}</span>}

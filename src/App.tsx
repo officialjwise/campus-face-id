@@ -13,6 +13,8 @@ import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
 import Colleges from "./pages/Colleges";
 import Departments from "./pages/Departments";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -62,8 +64,8 @@ const App = () => (
                   <Route path="students" element={<Admin />} />
                   <Route path="colleges" element={<Colleges />} />
                   <Route path="departments" element={<Departments />} />
-                  <Route path="reports" element={<div className="text-center py-8">Reports coming soon...</div>} />
-                  <Route path="settings" element={<div className="text-center py-8">Settings coming soon...</div>} />
+                  <Route path="reports" element={<Reports />} />
+                  <Route path="settings" element={<Settings />} />
                 </Routes>
               </AdminLayout>
             } />

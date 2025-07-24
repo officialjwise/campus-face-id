@@ -5,14 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Settings, Users, Search, Plus, Edit, Trash2, Download, Building2 } from "lucide-react";
+import { Settings, Users, Search, Plus, Edit, Trash2, Download, Building2, TrendingUp, BarChart3 } from "lucide-react";
 import { StudentModal } from "@/components/modals/StudentModal";
 import { useToast } from "@/hooks/use-toast";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from "recharts";
 
 interface Student {
   id: string;
   studentId: string;
   indexNumber: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
   fullName: string;
   college: string;
   department: string;
@@ -34,9 +38,12 @@ const Admin = () => {
   const [students, setStudents] = useState<Student[]>([
     {
       id: "1",
-      studentId: "STU001",
-      indexNumber: "IND2024001",
-      fullName: "John Doe",
+      studentId: "STU12345",
+      indexNumber: "IND2401",
+      firstName: "John",
+      middleName: "Michael",
+      lastName: "Doe",
+      fullName: "John Michael Doe",
       college: "College of Computing",
       department: "Computer Science",
       email: "john.doe@university.edu",
@@ -46,8 +53,10 @@ const Admin = () => {
     },
     {
       id: "2",
-      studentId: "STU002",
-      indexNumber: "IND2024002",
+      studentId: "STU67890",
+      indexNumber: "IND2402",
+      firstName: "Jane",
+      lastName: "Smith",
       fullName: "Jane Smith",
       college: "College of Computing",
       department: "Information Technology",
@@ -58,8 +67,10 @@ const Admin = () => {
     },
     {
       id: "3",
-      studentId: "STU003",
-      indexNumber: "IND2024003",
+      studentId: "STU11111",
+      indexNumber: "IND2403",
+      firstName: "Mike",
+      lastName: "Johnson",
       fullName: "Mike Johnson",
       college: "College of Engineering",
       department: "Civil Engineering",
@@ -70,9 +81,12 @@ const Admin = () => {
     },
     {
       id: "4",
-      studentId: "STU004",
-      indexNumber: "IND2024004",
-      fullName: "Sarah Wilson",
+      studentId: "STU22222",
+      indexNumber: "IND2404",
+      firstName: "Sarah",
+      middleName: "Elizabeth",
+      lastName: "Wilson",
+      fullName: "Sarah Elizabeth Wilson",
       college: "College of Business",
       department: "Business Administration",
       email: "sarah.wilson@university.edu",
@@ -148,6 +162,30 @@ const Admin = () => {
     }).length,
   };
 
+  // Chart data
+  const registrationData = [
+    { month: "Jan", registrations: 12 },
+    { month: "Feb", registrations: 19 },
+    { month: "Mar", registrations: 15 },
+    { month: "Apr", registrations: 25 },
+    { month: "May", registrations: 22 },
+    { month: "Jun", registrations: 30 },
+  ];
+
+  const collegeData = [
+    { name: "Computing", value: 45, color: "hsl(var(--primary))" },
+    { name: "Engineering", value: 25, color: "hsl(var(--success))" },
+    { name: "Business", value: 20, color: "hsl(var(--warning))" },
+    { name: "Others", value: 10, color: "hsl(var(--info))" },
+  ];
+
+  const departmentData = [
+    { department: "Computer Science", students: 35 },
+    { department: "Information Technology", students: 28 },
+    { department: "Civil Engineering", students: 22 },
+    { department: "Business Admin", students: 18 },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -213,6 +251,120 @@ const Admin = () => {
             </CardContent>
           </Card>
         </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Student Registrations
+            </CardTitle>
+            <CardDescription>Monthly registration trends</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={registrationData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: "hsl(var(--card))", 
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px"
+                  }} 
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="registrations" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={3}
+                  dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Students by College
+            </CardTitle>
+            <CardDescription>Distribution across colleges</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={collegeData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {collegeData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: "hsl(var(--card))", 
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px"
+                  }} 
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex flex-wrap gap-4 mt-4">
+              {collegeData.map((item, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-sm text-muted-foreground">{item.name} ({item.value}%)</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              Students by Department
+            </CardTitle>
+            <CardDescription>Top performing departments</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={departmentData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="department" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: "hsl(var(--card))", 
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px"
+                  }} 
+                />
+                <Bar 
+                  dataKey="students" 
+                  fill="hsl(var(--primary))" 
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Student Management */}
       <Card className="shadow-card">

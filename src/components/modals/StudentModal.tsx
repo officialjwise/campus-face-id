@@ -31,18 +31,24 @@ import { Camera, Upload } from "lucide-react";
 import PhotoModal from "@/components/PhotoModal";
 
 const studentSchema = z.object({
-  fullName: z.string()
-    .min(2, "Name must be at least 2 characters")
-    .max(50, "Name must be less than 50 characters")
-    .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
+  firstName: z.string()
+    .min(2, "First name must be at least 2 characters")
+    .max(30, "First name must be less than 30 characters")
+    .regex(/^[a-zA-Z]+$/, "First name can only contain letters"),
+  middleName: z.string()
+    .max(30, "Middle name must be less than 30 characters")
+    .regex(/^[a-zA-Z]*$/, "Middle name can only contain letters")
+    .optional(),
+  lastName: z.string()
+    .min(2, "Last name must be at least 2 characters")
+    .max(30, "Last name must be less than 30 characters")
+    .regex(/^[a-zA-Z]+$/, "Last name can only contain letters"),
   studentId: z.string()
-    .min(3, "Student ID must be at least 3 characters")
-    .max(20, "Student ID must be less than 20 characters")
-    .regex(/^[A-Z0-9]+$/, "Student ID can only contain uppercase letters and numbers"),
+    .length(8, "Student ID must be exactly 8 characters")
+    .regex(/^[A-Z0-9]{8}$/, "Student ID can only contain uppercase letters and numbers"),
   indexNumber: z.string()
-    .min(3, "Index number must be at least 3 characters")
-    .max(20, "Index number must be less than 20 characters")
-    .regex(/^[A-Z0-9]+$/, "Index number can only contain uppercase letters and numbers"),
+    .length(7, "Index number must be exactly 7 characters")
+    .regex(/^[A-Z0-9]{7}$/, "Index number can only contain uppercase letters and numbers"),
   email: z.string()
     .email("Invalid email address")
     .max(100, "Email must be less than 100 characters"),
@@ -55,6 +61,9 @@ type StudentFormData = z.infer<typeof studentSchema>;
 
 interface Student {
   id?: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
   fullName: string;
   studentId: string;
   indexNumber: string;
@@ -83,7 +92,9 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
   const form = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
     defaultValues: {
-      fullName: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
       studentId: "",
       indexNumber: "",
       email: "",
@@ -99,7 +110,9 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
   useEffect(() => {
     if (student && mode === "edit") {
       reset({
-        fullName: student.fullName,
+        firstName: student.firstName,
+        middleName: student.middleName || "",
+        lastName: student.lastName,
         studentId: student.studentId,
         indexNumber: student.indexNumber,
         email: student.email,
@@ -111,7 +124,9 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
       setPreviewImage(student.profileImage || "");
     } else {
       reset({
-        fullName: "",
+        firstName: "",
+        middleName: "",
+        lastName: "",
         studentId: "",
         indexNumber: "",
         email: "",
@@ -135,8 +150,15 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
   }, [watchedCollege, setValue, watch]);
 
   const handleSubmit = (data: StudentFormData) => {
+    const fullName = [data.firstName, data.middleName, data.lastName]
+      .filter(Boolean)
+      .join(' ');
+    
     const studentData: Student = {
-      fullName: data.fullName,
+      firstName: data.firstName,
+      middleName: data.middleName,
+      lastName: data.lastName,
+      fullName: fullName,
       studentId: data.studentId,
       indexNumber: data.indexNumber,
       email: data.email,
@@ -217,15 +239,15 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
-                name="fullName"
+                name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter full name" {...field} />
+                      <Input placeholder="Enter first name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -234,12 +256,42 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
 
               <FormField
                 control={form.control}
+                name="middleName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Middle Name (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter middle name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter last name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="studentId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Student ID</FormLabel>
+                    <FormLabel>Student ID (8 characters)</FormLabel>
                     <FormControl>
-                      <Input placeholder="STU001" {...field} />
+                      <Input placeholder="STU12345" maxLength={8} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -251,9 +303,9 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
                 name="indexNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Index Number</FormLabel>
+                    <FormLabel>Index Number (7 characters)</FormLabel>
                     <FormControl>
-                      <Input placeholder="IND2024001" {...field} />
+                      <Input placeholder="IND2401" maxLength={7} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -303,7 +355,7 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
                 control={form.control}
                 name="department"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="md:col-span-2">
                     <FormLabel>Department</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
