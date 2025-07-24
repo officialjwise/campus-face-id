@@ -168,7 +168,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background py-6 sm:py-8">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
@@ -183,13 +183,13 @@ const Register = () => {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
           {/* Registration Form - Takes 2/3 on XL screens */}
           <div className="xl:col-span-2">
-            <Card className="shadow-sm border border-border">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <UserPlus className="h-5 w-5 text-primary" />
+            <Card className="bg-white shadow-sm border border-gray-200">
+              <CardHeader className="pb-4 bg-gray-50 border-b border-gray-200">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-gray-900">
+                  <UserPlus className="h-5 w-5 text-blue-600" />
                   Student Information
                 </CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
+                <CardDescription className="text-sm text-gray-600">
                   Please fill in all required fields marked with *
                 </CardDescription>
               </CardHeader>
@@ -197,14 +197,14 @@ const Register = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Personal Information Section */}
                   <div>
-                    <h3 className="text-base font-semibold text-foreground mb-4 pb-2 border-b border-border">
+                    <h3 className="text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
                       Personal Information
                     </h3>
                     
                     {/* Name Fields */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName" className="text-sm font-medium text-foreground">
+                        <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
                           First Name *
                         </Label>
                         <Input
@@ -217,7 +217,7 @@ const Register = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="middleName" className="text-sm font-medium text-foreground">
+                        <Label htmlFor="middleName" className="text-sm font-medium text-gray-700">
                           Middle Name
                         </Label>
                         <Input
@@ -229,7 +229,7 @@ const Register = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="lastName" className="text-sm font-medium text-foreground">
+                        <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
                           Last Name *
                         </Label>
                         <Input
@@ -245,7 +245,7 @@ const Register = () => {
 
                     {/* Contact Information */}
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                      <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                         Email Address *
                       </Label>
                       <Input
@@ -262,14 +262,14 @@ const Register = () => {
 
                   {/* Academic Information Section */}
                   <div>
-                    <h3 className="text-base font-semibold text-foreground mb-4 pb-2 border-b border-border">
+                    <h3 className="text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
                       Academic Information
                     </h3>
                     
                     {/* ID Fields */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                       <div className="space-y-2">
-                        <Label htmlFor="studentId" className="text-sm font-medium text-foreground">
+                        <Label htmlFor="studentId" className="text-sm font-medium text-gray-700">
                           Student ID *
                         </Label>
                         <Input
@@ -281,10 +281,10 @@ const Register = () => {
                           maxLength={8}
                           required
                         />
-                        <p className="text-xs text-muted-foreground">Must be exactly 8 digits</p>
+                        <p className="text-xs text-gray-500">Must be exactly 8 digits</p>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="indexNumber" className="text-sm font-medium text-foreground">
+                        <Label htmlFor="indexNumber" className="text-sm font-medium text-gray-700">
                           Index Number *
                         </Label>
                         <Input
@@ -296,14 +296,14 @@ const Register = () => {
                           maxLength={7}
                           required
                         />
-                        <p className="text-xs text-muted-foreground">Must be exactly 7 digits</p>
+                        <p className="text-xs text-gray-500">Must be exactly 7 digits</p>
                       </div>
                     </div>
 
                     {/* College and Department */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="college" className="text-sm font-medium text-foreground">
+                        <Label htmlFor="college" className="text-sm font-medium text-gray-700">
                           College *
                         </Label>
                         <Select onValueChange={(value) => handleInputChange('college', value)} value={formData.college}>
@@ -320,7 +320,7 @@ const Register = () => {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="department" className="text-sm font-medium text-foreground">
+                        <Label htmlFor="department" className="text-sm font-medium text-gray-700">
                           Department *
                         </Label>
                         <Select 
@@ -344,7 +344,7 @@ const Register = () => {
                   </div>
 
                   {/* Submit Button */}
-                  <div className="pt-4 border-t border-border">
+                  <div className="pt-4 border-t border-gray-200">
                     <Button 
                       type="submit" 
                       className="w-full sm:w-auto sm:px-8 h-11"
@@ -362,20 +362,20 @@ const Register = () => {
 
           {/* Photo Capture Section - Takes 1/3 on XL screens */}
           <div className="xl:col-span-1">
-            <Card className="shadow-sm border border-border">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <Save className="h-5 w-5 text-primary" />
+            <Card className="bg-white shadow-sm border border-gray-200">
+              <CardHeader className="pb-4 bg-gray-50 border-b border-gray-200">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-gray-900">
+                  <Save className="h-5 w-5 text-blue-600" />
                   Student Photo
                 </CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
+                <CardDescription className="text-sm text-gray-600">
                   Capture or upload student photo for identification
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-3 sm:p-6">
                 <CameraCapture onCapture={handlePhotoCapture} isCapturing={isSubmitting} />
-                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground text-center">
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-800 text-center">
                     Photo capture is required for registration. Ensure the student is looking directly at the camera with good lighting.
                   </p>
                 </div>
@@ -386,20 +386,20 @@ const Register = () => {
 
         {/* Instructions */}
         <div className="mt-6 lg:mt-8">
-          <Card className="shadow-sm border border-border">
+          <Card className="bg-white shadow-sm border border-gray-200">
             <CardContent className="p-4 sm:p-6">
-              <h3 className="text-base font-semibold text-foreground mb-3">Registration Instructions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-muted-foreground">
+              <h3 className="text-base font-semibold text-gray-900 mb-3">Registration Instructions</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600">
                 <div>
-                  <h4 className="font-medium text-foreground mb-1">Student ID Format</h4>
+                  <h4 className="font-medium text-gray-900 mb-1">Student ID Format</h4>
                   <p>Must be exactly 8 numeric digits</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-foreground mb-1">Index Number Format</h4>
+                  <h4 className="font-medium text-gray-900 mb-1">Index Number Format</h4>
                   <p>Must be exactly 7 numeric digits</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-foreground mb-1">Photo Requirements</h4>
+                  <h4 className="font-medium text-gray-900 mb-1">Photo Requirements</h4>
                   <p>Clear, front-facing photo with good lighting</p>
                 </div>
               </div>

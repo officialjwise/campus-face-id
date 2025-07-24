@@ -96,14 +96,10 @@ export default {
 			},
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',
-				'gradient-subtle': 'var(--gradient-subtle)',
-				'gradient-glass': 'var(--gradient-glass)'
+				'gradient-subtle': 'var(--gradient-subtle)'
 			},
 			boxShadow: {
-				'elegant': 'var(--shadow-elegant)',
-				'glow': 'var(--shadow-glow)',
-				'neon': 'var(--shadow-neon)',
-				'border-glow': 'var(--border-glow)'
+				'elegant': 'var(--shadow-elegant)'
 			},
 			transitionTimingFunction: {
 				'smooth': 'var(--transition-smooth)'
