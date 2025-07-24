@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { colleges, getDepartmentsByCollege } from "@/data/colleges";
 import { Camera, Upload } from "lucide-react";
-import PhotoModal from "@/components/PhotoModal";
+import CameraCapture from "@/components/CameraCapture";
 
 const studentSchema = z.object({
   firstName: z.string()
@@ -186,9 +186,15 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
     }
   };
 
-  const handleCameraCapture = (imageData: string) => {
-    setPreviewImage(imageData);
-    setValue("profileImage", imageData);
+  const handleCameraCapture = (blob: Blob) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setPreviewImage(result);
+      setValue("profileImage", result);
+      setShowCamera(false);
+    };
+    reader.readAsDataURL(blob);
   };
 
   return (
@@ -387,6 +393,25 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
               />
             </div>
 
+            {/* Camera Section - Show when camera is requested */}
+            {showCamera && (
+              <div className="mt-4">
+                <CameraCapture 
+                  onCapture={handleCameraCapture} 
+                  isCapturing={false} 
+                />
+                <div className="flex justify-center mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCamera(false)}
+                  >
+                    Close Camera
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
@@ -397,12 +422,6 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
             </div>
           </form>
         </Form>
-
-        <PhotoModal
-          isOpen={showCamera}
-          onClose={() => setShowCamera(false)}
-          onCapture={handleCameraCapture}
-        />
       </DialogContent>
     </Dialog>
   );

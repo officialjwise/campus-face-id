@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Camera, RefreshCw, Upload } from "lucide-react";
+import { Camera, RefreshCw, Upload, Check, X } from "lucide-react";
 
 interface CameraCaptureProps {
   onCapture: (blob: Blob) => void | Promise<void>;
@@ -13,6 +13,7 @@ export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureP
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>("");
+  const [capturedImage, setCapturedImage] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -60,14 +61,27 @@ export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureP
       if (ctx) {
         ctx.drawImage(video, 0, 0);
         
-        canvas.toBlob((blob) => {
-          if (blob) {
-            onCapture(blob);
-          }
-        }, "image/jpeg", 0.8);
+        // Get the captured image as a data URL for preview
+        const imageDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        setCapturedImage(imageDataUrl);
       }
     }
-  }, [onCapture, stream]);
+  }, [stream]);
+
+  const confirmCapture = useCallback(() => {
+    if (canvasRef.current) {
+      canvasRef.current.toBlob((blob) => {
+        if (blob) {
+          onCapture(blob);
+          setCapturedImage("");
+        }
+      }, "image/jpeg", 0.8);
+    }
+  }, [onCapture]);
+
+  const retakePhoto = useCallback(() => {
+    setCapturedImage("");
+  }, []);
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -122,40 +136,73 @@ export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureP
       <CardContent className="p-6">
         <div className="space-y-4">
           <div className="relative">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full rounded-lg bg-muted"
-              style={{ maxHeight: '400px' }}
-            />
-            <canvas ref={canvasRef} className="hidden" />
-            
-            {hasPermission === null && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-lg">
-                <Button onClick={startCamera} size="lg">
-                  <Camera className="h-5 w-5 mr-2" />
-                  Start Camera
-                </Button>
+            {capturedImage ? (
+              // Show captured image preview
+              <div className="relative">
+                <img 
+                  src={capturedImage} 
+                  alt="Captured photo" 
+                  className="w-full rounded-lg bg-muted"
+                  style={{ maxHeight: '400px', objectFit: 'cover' }}
+                />
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                  <Button 
+                    onClick={retakePhoto}
+                    variant="outline"
+                    size="lg"
+                    className="rounded-full h-12 w-12 p-0"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    onClick={confirmCapture}
+                    disabled={isCapturing}
+                    size="lg"
+                    className="rounded-full h-12 w-12 p-0 bg-primary"
+                  >
+                    <Check className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
-            )}
-            
-            {stream && (
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                <Button 
-                  onClick={capturePhoto} 
-                  disabled={isCapturing}
-                  size="lg"
-                  className="rounded-full h-16 w-16 p-0"
-                >
-                  <Camera className="h-8 w-8" />
-                </Button>
-              </div>
+            ) : (
+              // Show live camera feed
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full rounded-lg bg-muted"
+                  style={{ maxHeight: '400px' }}
+                />
+                <canvas ref={canvasRef} className="hidden" />
+                
+                {hasPermission === null && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-lg">
+                    <Button onClick={startCamera} size="lg">
+                      <Camera className="h-5 w-5 mr-2" />
+                      Start Camera
+                    </Button>
+                  </div>
+                )}
+                
+                {stream && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                    <Button 
+                      onClick={capturePhoto} 
+                      disabled={isCapturing}
+                      size="lg"
+                      className="rounded-full h-16 w-16 p-0"
+                    >
+                      <Camera className="h-8 w-8" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
           
-          {stream && (
+          {stream && !capturedImage && (
             <div className="flex justify-between items-center">
               <Badge variant="secondary" className="text-primary">
                 Camera Active
@@ -178,6 +225,14 @@ export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureP
                   </Button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {capturedImage && (
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Photo captured! Click the checkmark to confirm or X to retake.
+              </p>
             </div>
           )}
         </div>
