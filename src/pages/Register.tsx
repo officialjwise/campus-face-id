@@ -181,7 +181,7 @@ const Register = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Registration Form */}
-          <Card className="glass-card glow-border">
+          <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <UserPlus className="h-6 w-6 text-primary" />
@@ -202,7 +202,6 @@ const Register = () => {
                       placeholder="First name"
                       value={formData.firstName}
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      className="glow-hover"
                       required
                     />
                   </div>
@@ -213,7 +212,6 @@ const Register = () => {
                       placeholder="Middle name (optional)"
                       value={formData.middleName}
                       onChange={(e) => handleInputChange('middleName', e.target.value)}
-                      className="glow-hover"
                     />
                   </div>
                   <div className="space-y-2">
@@ -223,7 +221,6 @@ const Register = () => {
                       placeholder="Last name"
                       value={formData.lastName}
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      className="glow-hover"
                       required
                     />
                   </div>
@@ -238,7 +235,6 @@ const Register = () => {
                       placeholder="8 digits (e.g., 12345678)"
                       value={formData.studentId}
                       onChange={(e) => handleInputChange('studentId', e.target.value.replace(/\D/g, '').slice(0, 8))}
-                      className="glow-hover"
                       maxLength={8}
                       required
                     />
@@ -250,7 +246,6 @@ const Register = () => {
                       placeholder="7 digits (e.g., 1234567)"
                       value={formData.indexNumber}
                       onChange={(e) => handleInputChange('indexNumber', e.target.value.replace(/\D/g, '').slice(0, 7))}
-                      className="glow-hover"
                       maxLength={7}
                       required
                     />
@@ -262,10 +257,10 @@ const Register = () => {
                   <div className="space-y-2">
                     <Label htmlFor="college" className="text-sm font-medium">College *</Label>
                     <Select onValueChange={(value) => handleInputChange('college', value)} value={formData.college}>
-                      <SelectTrigger className="glow-hover">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select college" />
                       </SelectTrigger>
-                      <SelectContent className="glass-card">
+                      <SelectContent>
                         {colleges.map((college) => (
                           <SelectItem key={college.name} value={college.name}>
                             {college.name}
@@ -281,10 +276,10 @@ const Register = () => {
                       value={formData.department}
                       disabled={!formData.college}
                     >
-                      <SelectTrigger className="glow-hover">
+                      <SelectTrigger>
                         <SelectValue placeholder={formData.college ? "Select department" : "Select college first"} />
                       </SelectTrigger>
-                      <SelectContent className="glass-card">
+                      <SelectContent>
                         {availableDepartments.map((dept) => (
                           <SelectItem key={dept} value={dept}>
                             {dept}
@@ -304,7 +299,6 @@ const Register = () => {
                     placeholder="student@knust.edu.gh"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="glow-hover"
                     required
                   />
                 </div>
@@ -324,7 +318,7 @@ const Register = () => {
 
           {/* Camera Capture */}
           <div className="space-y-6">
-            <Card className="glass-card glow-border">
+            <Card className="glass-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Sparkles className="h-6 w-6 text-accent" />
