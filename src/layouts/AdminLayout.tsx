@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { AdminHeader } from "@/components/AdminHeader";
 import { useTheme } from "@/components/ThemeProvider";
 
 interface AdminLayoutProps {
@@ -20,12 +21,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full flex bg-background">
-        <AdminSidebar darkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
-        <main className="flex-1 overflow-auto">
-          <div className="container mx-auto p-6">
-            {children}
-          </div>
-        </main>
+        <AdminSidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <AdminHeader isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+          <main className="flex-1 overflow-auto">
+            <div className="container mx-auto p-6">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
     </SidebarProvider>
   );

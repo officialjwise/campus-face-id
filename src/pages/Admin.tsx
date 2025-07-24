@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Settings, Users, Search, Plus, Edit, Trash2, Download } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Settings, Users, Search, Plus, Edit, Trash2, Download, Building2 } from "lucide-react";
+import { StudentModal } from "@/components/modals/StudentModal";
+import { useToast } from "@/hooks/use-toast";
 
 interface Student {
   id: string;
@@ -14,6 +17,7 @@ interface Student {
   college: string;
   department: string;
   email: string;
+  profileImage?: string;
   registrationDate: string;
   status: "active" | "inactive";
 }
@@ -21,9 +25,13 @@ interface Student {
 const Admin = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | undefined>();
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const { toast } = useToast();
 
   // Mock data - in real app, fetch from backend
-  const [students] = useState<Student[]>([
+  const [students, setStudents] = useState<Student[]>([
     {
       id: "1",
       studentId: "STU001",
@@ -32,6 +40,7 @@ const Admin = () => {
       college: "College of Computing",
       department: "Computer Science",
       email: "john.doe@university.edu",
+      profileImage: "https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?w=400",
       registrationDate: "2024-01-15",
       status: "active",
     },
@@ -43,6 +52,7 @@ const Admin = () => {
       college: "College of Computing",
       department: "Information Technology",
       email: "jane.smith@university.edu",
+      profileImage: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400",
       registrationDate: "2024-01-16",
       status: "active",
     },
@@ -52,14 +62,71 @@ const Admin = () => {
       indexNumber: "IND2024003",
       fullName: "Mike Johnson",
       college: "College of Engineering",
-      department: "Engineering",
+      department: "Civil Engineering",
       email: "mike.johnson@university.edu",
+      profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
       registrationDate: "2024-01-17",
       status: "inactive",
     },
+    {
+      id: "4",
+      studentId: "STU004",
+      indexNumber: "IND2024004",
+      fullName: "Sarah Wilson",
+      college: "College of Business",
+      department: "Business Administration",
+      email: "sarah.wilson@university.edu",
+      profileImage: "https://images.unsplash.com/photo-1494790108755-2616b6f6d16b?w=400",
+      registrationDate: "2024-01-18",
+      status: "active",
+    },
   ]);
 
-  const departments = ["all", "Computer Science", "Information Technology", "Engineering", "Business Administration"];
+  const departments = ["all", "Computer Science", "Information Technology", "Civil Engineering", "Business Administration"];
+
+  const handleCreateStudent = () => {
+    setSelectedStudent(undefined);
+    setModalMode("create");
+    setModalOpen(true);
+  };
+
+  const handleEditStudent = (student: Student) => {
+    setSelectedStudent(student);
+    setModalMode("edit");
+    setModalOpen(true);
+  };
+
+  const handleDeleteStudent = (student: Student) => {
+    setStudents(students.filter(s => s.id !== student.id));
+    toast({
+      title: "Student deleted",
+      description: `${student.fullName} has been removed successfully.`,
+    });
+  };
+
+  const handleSubmitStudent = (studentData: Student) => {
+    if (modalMode === "create") {
+      const newStudent = {
+        ...studentData,
+        id: Date.now().toString(),
+        registrationDate: new Date().toISOString().split('T')[0],
+        status: "active" as const,
+      };
+      setStudents([...students, newStudent]);
+      toast({
+        title: "Student created",
+        description: `${studentData.fullName} has been added successfully.`,
+      });
+    } else {
+      setStudents(students.map(s => 
+        s.id === selectedStudent?.id ? { ...studentData, id: s.id } : s
+      ));
+      toast({
+        title: "Student updated",
+        description: `${studentData.fullName} has been updated successfully.`,
+      });
+    }
+  };
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -165,7 +232,7 @@ const Admin = () => {
                   <Download className="h-4 w-4" />
                   Export
                 </Button>
-                 <Button>
+                 <Button onClick={handleCreateStudent}>
                    <Plus className="h-4 w-4" />
                    Add Student
                  </Button>
@@ -202,8 +269,9 @@ const Admin = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Student</TableHead>
                     <TableHead>Student ID</TableHead>
-                    <TableHead>Name</TableHead>
+                    <TableHead>College</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Status</TableHead>
@@ -214,9 +282,30 @@ const Admin = () => {
                 <TableBody>
                   {filteredStudents.map((student) => (
                     <TableRow key={student.id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={student.profileImage} />
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {student.fullName.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{student.fullName}</p>
+                            <p className="text-sm text-muted-foreground">{student.indexNumber}</p>
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">{student.studentId}</TableCell>
-                      <TableCell>{student.fullName}</TableCell>
-                      <TableCell>{student.department}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{student.college}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{student.department}</Badge>
+                      </TableCell>
                       <TableCell>{student.email}</TableCell>
                       <TableCell>
                          <Badge 
@@ -231,10 +320,19 @@ const Admin = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleEditStudent(student)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteStudent(student)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -256,6 +354,14 @@ const Admin = () => {
             )}
           </CardContent>
         </Card>
+
+      <StudentModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleSubmitStudent}
+        student={selectedStudent}
+        mode={modalMode}
+      />
     </div>
   );
 };

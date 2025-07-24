@@ -7,8 +7,8 @@ import {
   FileText,
   Settings,
   LogOut,
-  Moon,
-  Sun,
+  Building2,
+  BookOpen,
   ChevronDown,
   Menu,
 } from "lucide-react";
@@ -27,10 +27,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-interface AdminSidebarProps {
-  darkMode: boolean;
-  toggleDarkMode: () => void;
-}
 
 const menuItems = [
   {
@@ -44,6 +40,18 @@ const menuItems = [
     url: "/admin/students",
     icon: Users,
     badge: "124",
+  },
+  {
+    title: "Colleges",
+    url: "/admin/colleges",
+    icon: Building2,
+    badge: "3",
+  },
+  {
+    title: "Departments",
+    url: "/admin/departments",
+    icon: BookOpen,
+    badge: "8",
   },
   {
     title: "Recognition",
@@ -67,7 +75,7 @@ const settingsItems = [
   },
 ];
 
-export function AdminSidebar({ darkMode, toggleDarkMode }: AdminSidebarProps) {
+export function AdminSidebar() {
   const { open, setOpen } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
@@ -182,28 +190,6 @@ export function AdminSidebar({ darkMode, toggleDarkMode }: AdminSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Theme Toggle */}
-        <div className="mt-8">
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleDarkMode}
-                className="w-full justify-start px-3 py-2 text-sidebar-foreground hover:bg-sidebar-accent/50"
-              >
-                {darkMode ? (
-                  <Sun className="w-5 h-5 mr-3 flex-shrink-0" />
-                ) : (
-                  <Moon className="w-5 h-5 mr-3 flex-shrink-0" />
-                )}
-                {open && (
-                  <span>{darkMode ? "Light Mode" : "Dark Mode"}</span>
-                )}
-              </Button>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </div>
       </SidebarContent>
 
       {/* Footer */}
