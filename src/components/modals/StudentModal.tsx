@@ -28,12 +28,24 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { colleges, getDepartmentsByCollege } from "@/data/colleges";
 import { Camera, Upload } from "lucide-react";
+import PhotoModal from "@/components/PhotoModal";
 
 const studentSchema = z.object({
-  fullName: z.string().min(2, "Name must be at least 2 characters"),
-  studentId: z.string().min(3, "Student ID is required"),
-  indexNumber: z.string().min(3, "Index number is required"),
-  email: z.string().email("Invalid email address"),
+  fullName: z.string()
+    .min(2, "Name must be at least 2 characters")
+    .max(50, "Name must be less than 50 characters")
+    .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
+  studentId: z.string()
+    .min(3, "Student ID must be at least 3 characters")
+    .max(20, "Student ID must be less than 20 characters")
+    .regex(/^[A-Z0-9]+$/, "Student ID can only contain uppercase letters and numbers"),
+  indexNumber: z.string()
+    .min(3, "Index number must be at least 3 characters")
+    .max(20, "Index number must be less than 20 characters")
+    .regex(/^[A-Z0-9]+$/, "Index number can only contain uppercase letters and numbers"),
+  email: z.string()
+    .email("Invalid email address")
+    .max(100, "Email must be less than 100 characters"),
   college: z.string().min(1, "College is required"),
   department: z.string().min(1, "Department is required"),
   profileImage: z.string().optional(),
@@ -66,6 +78,7 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
   const [selectedCollege, setSelectedCollege] = useState("");
   const [departments, setDepartments] = useState<string[]>([]);
   const [previewImage, setPreviewImage] = useState<string>("");
+  const [showCamera, setShowCamera] = useState(false);
 
   const form = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
@@ -151,17 +164,9 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
     }
   };
 
-  const getRandomProfileImage = () => {
-    const images = [
-      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400",
-      "https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?w=400",
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
-      "https://images.unsplash.com/photo-1494790108755-2616b6f6d16b?w=400",
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
-    ];
-    const randomImage = images[Math.floor(Math.random() * images.length)];
-    setPreviewImage(randomImage);
-    setValue("profileImage", randomImage);
+  const handleCameraCapture = (imageData: string) => {
+    setPreviewImage(imageData);
+    setValue("profileImage", imageData);
   };
 
   return (
@@ -197,9 +202,10 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={getRandomProfileImage}
+                  onClick={() => setShowCamera(true)}
                 >
-                  Random Photo
+                  <Camera className="h-4 w-4 mr-2" />
+                  Take Photo
                 </Button>
               </div>
               <input
@@ -329,6 +335,12 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
             </div>
           </form>
         </Form>
+
+        <PhotoModal
+          isOpen={showCamera}
+          onClose={() => setShowCamera(false)}
+          onCapture={handleCameraCapture}
+        />
       </DialogContent>
     </Dialog>
   );

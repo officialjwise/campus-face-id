@@ -36,7 +36,7 @@ const menuItems = [
     badge: null,
   },
   {
-    title: "Students",
+    title: "Student Management",
     url: "/admin/students",
     icon: Users,
     badge: "124",
@@ -52,12 +52,6 @@ const menuItems = [
     url: "/admin/departments",
     icon: BookOpen,
     badge: "8",
-  },
-  {
-    title: "Recognition",
-    url: "/admin/recognition",
-    icon: Camera,
-    badge: "3",
   },
   {
     title: "Reports",
@@ -140,7 +134,7 @@ export function AdminSidebar() {
                         item.url
                       )}`}
                     >
-                      <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                      <item.icon className={`w-5 h-5 flex-shrink-0 ${open ? "mr-3" : ""}`} />
                       {open && (
                         <>
                           <span className="flex-1">{item.title}</span>
@@ -180,7 +174,7 @@ export function AdminSidebar() {
                         item.url
                       )}`}
                     >
-                      <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                      <item.icon className={`w-5 h-5 flex-shrink-0 ${open ? "mr-3" : ""}`} />
                       {open && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
