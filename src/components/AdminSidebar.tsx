@@ -83,7 +83,7 @@ export function AdminSidebar() {
 
   const getNavClass = (path: string) => {
     const active = isActive(path);
-    return `flex items-center ${open ? 'px-3' : 'px-2 justify-center'} py-2 rounded-lg transition-colors ${
+    return `flex items-center px-3 py-2 rounded-lg transition-colors ${
       active
         ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
         : "hover:bg-sidebar-accent/50 text-sidebar-foreground hover:text-sidebar-accent-foreground"
@@ -92,7 +92,7 @@ export function AdminSidebar() {
 
   return (
     <Sidebar
-      className="border-r border-sidebar-border bg-sidebar data-[state=collapsed]:w-16"
+      className="border-r border-sidebar-border bg-sidebar"
       collapsible="icon"
     >
       {/* Header */}
@@ -186,39 +186,29 @@ export function AdminSidebar() {
 
       {/* Footer */}
       <div className="mt-auto p-4 border-t border-sidebar-border">
-        <div className={`flex items-center ${open ? 'space-x-3' : 'justify-center'}`}>
-          {open ? (
-            <>
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-primary-foreground">
-                  A
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
-                  Admin User
-                </p>
-                <p className="text-xs text-sidebar-foreground/60 truncate">
-                  admin@university.edu
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-sidebar-foreground/60 hover:text-sidebar-foreground p-1"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-sidebar-foreground/60 hover:text-sidebar-foreground p-1"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+            <span className="text-sm font-medium text-primary-foreground">
+              A
+            </span>
+          </div>
+          {open && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">
+                Admin User
+              </p>
+              <p className="text-xs text-sidebar-foreground/60 truncate">
+                admin@university.edu
+              </p>
+            </div>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-sidebar-foreground/60 hover:text-sidebar-foreground p-1"
+          >
+            <LogOut className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </Sidebar>
