@@ -44,11 +44,11 @@ const studentSchema = z.object({
     .max(30, "Last name must be less than 30 characters")
     .regex(/^[a-zA-Z]+$/, "Last name can only contain letters"),
   studentId: z.string()
-    .length(8, "Student ID must be exactly 8 characters")
-    .regex(/^[A-Z0-9]{8}$/, "Student ID can only contain uppercase letters and numbers"),
+    .length(8, "Student ID must be exactly 8 digits")
+    .regex(/^\d{8}$/, "Student ID can only contain numbers"),
   indexNumber: z.string()
-    .length(7, "Index number must be exactly 7 characters")
-    .regex(/^[A-Z0-9]{7}$/, "Index number can only contain uppercase letters and numbers"),
+    .length(7, "Index number must be exactly 7 digits")
+    .regex(/^\d{7}$/, "Index number can only contain numbers"),
   email: z.string()
     .email("Invalid email address")
     .max(100, "Email must be less than 100 characters"),
@@ -284,14 +284,19 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
+                <FormField
                 control={form.control}
                 name="studentId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Student ID (8 characters)</FormLabel>
+                    <FormLabel>Student ID (8 digits)</FormLabel>
                     <FormControl>
-                      <Input placeholder="STU12345" maxLength={8} {...field} />
+                      <Input 
+                        placeholder="12345678" 
+                        maxLength={8} 
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -303,9 +308,14 @@ export function StudentModal({ isOpen, onClose, onSubmit, student, mode }: Stude
                 name="indexNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Index Number (7 characters)</FormLabel>
+                    <FormLabel>Index Number (7 digits)</FormLabel>
                     <FormControl>
-                      <Input placeholder="IND2401" maxLength={7} {...field} />
+                      <Input 
+                        placeholder="1234567" 
+                        maxLength={7} 
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 7))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

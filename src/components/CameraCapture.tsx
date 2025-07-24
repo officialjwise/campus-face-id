@@ -85,10 +85,10 @@ export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureP
 
   if (hasPermission === false) {
     return (
-      <Card className="w-full">
+      <Card className="w-full shadow-elegant">
         <CardContent className="p-6">
           <div className="text-center space-y-4">
-            <div className="text-red-500">
+            <div className="text-destructive">
               <Camera className="h-12 w-12 mx-auto mb-2" />
               <p className="text-sm">{error}</p>
             </div>
@@ -118,7 +118,7 @@ export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureP
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full shadow-elegant">
       <CardContent className="p-6">
         <div className="space-y-4">
           <div className="relative">
@@ -127,13 +127,13 @@ export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureP
               autoPlay
               playsInline
               muted
-              className="w-full rounded-lg bg-gray-900"
+              className="w-full rounded-lg bg-muted"
               style={{ maxHeight: '400px' }}
             />
             <canvas ref={canvasRef} className="hidden" />
             
             {hasPermission === null && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+              <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-lg">
                 <Button onClick={startCamera} size="lg">
                   <Camera className="h-5 w-5 mr-2" />
                   Start Camera
@@ -157,7 +157,7 @@ export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureP
           
           {stream && (
             <div className="flex justify-between items-center">
-              <Badge variant="secondary" className="text-green-600">
+              <Badge variant="secondary" className="text-primary">
                 Camera Active
               </Badge>
               <div className="space-x-2">
