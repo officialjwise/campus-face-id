@@ -6,12 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import CameraCapture from "@/components/CameraCapture";
-import { UserPlus, Save } from "lucide-react";
+import { UserPlus, Save, Sparkles } from "lucide-react";
+import { colleges, getDepartmentsByCollege } from "@/data/colleges";
 
 interface StudentFormData {
+  firstName: string;
+  middleName: string;
+  lastName: string;
   studentId: string;
   indexNumber: string;
-  fullName: string;
   college: string;
   department: string;
   email: string;
@@ -21,30 +24,26 @@ interface StudentFormData {
 const Register = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState<StudentFormData>({
+    firstName: "",
+    middleName: "",
+    lastName: "",
     studentId: "",
     indexNumber: "",
-    fullName: "",
     college: "",
     department: "",
     email: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Mock departments - in real app, fetch from backend
-  const departments = [
-    "Computer Science",
-    "Information Technology", 
-    "Software Engineering",
-    "Data Science",
-    "Cybersecurity",
-    "Engineering",
-    "Business Administration",
-    "Accounting",
-    "Marketing",
-  ];
+  const [availableDepartments, setAvailableDepartments] = useState<string[]>([]);
 
   const handleInputChange = (field: keyof StudentFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Reset department when college changes
+    if (field === 'college') {
+      setFormData(prev => ({ ...prev, department: '' }));
+      setAvailableDepartments(getDepartmentsByCollege(value));
+    }
   };
 
   const handlePhotoCapture = (blob: Blob) => {
@@ -60,13 +59,35 @@ const Register = () => {
     setIsSubmitting(true);
 
     // Validation
-    const requiredFields = ['studentId', 'indexNumber', 'fullName', 'college', 'department', 'email'];
+    const requiredFields = ['firstName', 'lastName', 'studentId', 'indexNumber', 'college', 'department', 'email'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof StudentFormData]);
 
     if (missingFields.length > 0) {
       toast({
         title: "Missing required fields",
         description: `Please fill in: ${missingFields.join(', ')}`,
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Student ID validation (8 digits)
+    if (!/^\d{8}$/.test(formData.studentId)) {
+      toast({
+        title: "Invalid Student ID",
+        description: "Student ID must be exactly 8 digits.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Index Number validation (7 digits)
+    if (!/^\d{7}$/.test(formData.indexNumber)) {
+      toast({
+        title: "Invalid Index Number",
+        description: "Index Number must be exactly 7 digits.",
         variant: "destructive",
       });
       setIsSubmitting(false);
@@ -98,9 +119,11 @@ const Register = () => {
     try {
       // Simulate API call - replace with actual backend integration
       const formDataToSend = new FormData();
+      formDataToSend.append('firstName', formData.firstName);
+      formDataToSend.append('middleName', formData.middleName);
+      formDataToSend.append('lastName', formData.lastName);
       formDataToSend.append('studentId', formData.studentId);
       formDataToSend.append('indexNumber', formData.indexNumber);
-      formDataToSend.append('fullName', formData.fullName);
       formDataToSend.append('college', formData.college);
       formDataToSend.append('department', formData.department);
       formDataToSend.append('email', formData.email);
@@ -117,18 +140,21 @@ const Register = () => {
 
       toast({
         title: "Registration successful!",
-        description: `Student ${formData.fullName} has been registered successfully.`,
+        description: `Student ${formData.firstName} ${formData.lastName} has been registered successfully.`,
       });
 
       // Reset form
       setFormData({
+        firstName: "",
+        middleName: "",
+        lastName: "",
         studentId: "",
         indexNumber: "",
-        fullName: "",
         college: "",
         department: "",
         email: "",
       });
+      setAvailableDepartments([]);
 
     } catch (error) {
       toast({
@@ -143,79 +169,123 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Student Registration</h1>
-          <p className="text-lg text-muted-foreground">Register a new student with facial recognition</p>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Sparkles className="h-8 w-8 text-accent" />
+            <h1 className="text-4xl font-bold text-foreground">AI Student Registration</h1>
+            <Sparkles className="h-8 w-8 text-accent" />
+          </div>
+          <p className="text-lg text-muted-foreground">Register students with advanced facial recognition technology</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Registration Form */}
-          <Card className="shadow-elegant">
+          <Card className="glass-card glow-border">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5 text-primary" />
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <UserPlus className="h-6 w-6 text-primary" />
                 Student Information
               </CardTitle>
-              <CardDescription>
-                Fill in the student details below
+              <CardDescription className="text-muted-foreground">
+                Complete all required fields for student registration
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Name Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName" className="text-sm font-medium">First Name *</Label>
+                    <Input
+                      id="firstName"
+                      placeholder="First name"
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      className="glow-hover"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="middleName" className="text-sm font-medium">Middle Name</Label>
+                    <Input
+                      id="middleName"
+                      placeholder="Middle name (optional)"
+                      value={formData.middleName}
+                      onChange={(e) => handleInputChange('middleName', e.target.value)}
+                      className="glow-hover"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName" className="text-sm font-medium">Last Name *</Label>
+                    <Input
+                      id="lastName"
+                      placeholder="Last name"
+                      value={formData.lastName}
+                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      className="glow-hover"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* ID Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="studentId">Student ID *</Label>
+                    <Label htmlFor="studentId" className="text-sm font-medium">Student ID *</Label>
                     <Input
                       id="studentId"
-                      placeholder="e.g., STU001"
+                      placeholder="8 digits (e.g., 12345678)"
                       value={formData.studentId}
-                      onChange={(e) => handleInputChange('studentId', e.target.value)}
+                      onChange={(e) => handleInputChange('studentId', e.target.value.replace(/\D/g, '').slice(0, 8))}
+                      className="glow-hover"
+                      maxLength={8}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="indexNumber">Index Number *</Label>
+                    <Label htmlFor="indexNumber" className="text-sm font-medium">Index Number *</Label>
                     <Input
                       id="indexNumber"
-                      placeholder="e.g., IND2024001"
+                      placeholder="7 digits (e.g., 1234567)"
                       value={formData.indexNumber}
-                      onChange={(e) => handleInputChange('indexNumber', e.target.value)}
+                      onChange={(e) => handleInputChange('indexNumber', e.target.value.replace(/\D/g, '').slice(0, 7))}
+                      className="glow-hover"
+                      maxLength={7}
                       required
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name *</Label>
-                  <Input
-                    id="fullName"
-                    placeholder="Enter full name"
-                    value={formData.fullName}
-                    onChange={(e) => handleInputChange('fullName', e.target.value)}
-                    required
-                  />
-                </div>
-
+                {/* College and Department */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="college">College *</Label>
-                    <Input
-                      id="college"
-                      placeholder="e.g., College of Computing"
-                      value={formData.college}
-                      onChange={(e) => handleInputChange('college', e.target.value)}
-                      required
-                    />
+                    <Label htmlFor="college" className="text-sm font-medium">College *</Label>
+                    <Select onValueChange={(value) => handleInputChange('college', value)} value={formData.college}>
+                      <SelectTrigger className="glow-hover">
+                        <SelectValue placeholder="Select college" />
+                      </SelectTrigger>
+                      <SelectContent className="glass-card">
+                        {colleges.map((college) => (
+                          <SelectItem key={college.name} value={college.name}>
+                            {college.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="department">Department *</Label>
-                    <Select onValueChange={(value) => handleInputChange('department', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
+                    <Label htmlFor="department" className="text-sm font-medium">Department *</Label>
+                    <Select 
+                      onValueChange={(value) => handleInputChange('department', value)} 
+                      value={formData.department}
+                      disabled={!formData.college}
+                    >
+                      <SelectTrigger className="glow-hover">
+                        <SelectValue placeholder={formData.college ? "Select department" : "Select college first"} />
                       </SelectTrigger>
-                      <SelectContent>
-                        {departments.map((dept) => (
+                      <SelectContent className="glass-card">
+                        {availableDepartments.map((dept) => (
                           <SelectItem key={dept} value={dept}>
                             {dept}
                           </SelectItem>
@@ -225,25 +295,27 @@ const Register = () => {
                   </div>
                 </div>
 
+                {/* Email */}
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
+                  <Label htmlFor="email" className="text-sm font-medium">Email Address *</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="student@university.edu"
+                    placeholder="student@knust.edu.gh"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
+                    className="glow-hover"
                     required
                   />
                 </div>
 
                 <Button 
                   type="submit" 
-                  className="w-full" 
+                  className="w-full glow-hover bg-gradient-primary hover:shadow-glow transition-all duration-300" 
                   disabled={isSubmitting}
-                  variant="hero"
+                  size="lg"
                 >
-                  <Save className="h-4 w-4" />
+                  <Save className="h-4 w-4 mr-2" />
                   {isSubmitting ? "Registering..." : "Register Student"}
                 </Button>
               </form>
@@ -251,16 +323,21 @@ const Register = () => {
           </Card>
 
           {/* Camera Capture */}
-          <div>
-            <Card className="shadow-elegant mb-4">
+          <div className="space-y-6">
+            <Card className="glass-card glow-border">
               <CardHeader>
-                <CardTitle>Student Photo</CardTitle>
-                <CardDescription>
-                  Capture the student's photo for facial recognition
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Sparkles className="h-6 w-6 text-accent" />
+                  AI Face Capture
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Capture a clear photo for facial recognition enrollment
                 </CardDescription>
               </CardHeader>
             </Card>
-            <CameraCapture onCapture={handlePhotoCapture} isCapturing={isSubmitting} />
+            <div className="glass-card p-1 rounded-2xl">
+              <CameraCapture onCapture={handlePhotoCapture} isCapturing={isSubmitting} />
+            </div>
           </div>
         </div>
       </div>
