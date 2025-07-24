@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import Recognition from "./pages/Recognition";
 import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
+import StudentManagement from "./pages/StudentManagement";
 import Colleges from "./pages/Colleges";
 import Departments from "./pages/Departments";
 import Reports from "./pages/Reports";
@@ -61,7 +62,7 @@ const App = () => (
               <AdminLayout>
                 <Routes>
                   <Route path="" element={<Admin />} />
-                  <Route path="students" element={<Admin />} />
+                  <Route path="students" element={<StudentManagement />} />
                   <Route path="colleges" element={<Colleges />} />
                   <Route path="departments" element={<Departments />} />
                   <Route path="reports" element={<Reports />} />
