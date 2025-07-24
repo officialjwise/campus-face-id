@@ -82,15 +82,16 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Admin Panel</h1>
-          <p className="text-lg text-muted-foreground">Manage students, departments, and system settings</p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground">Welcome to the admin dashboard</p>
         </div>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="shadow-elegant">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -108,11 +109,11 @@ const Admin = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Active Students</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+                  <p className="text-2xl font-bold text-success">{stats.active}</p>
                 </div>
-                <Badge variant="default" className="bg-green-100 text-green-800">
-                  Active
-                </Badge>
+                 <Badge className="bg-success/10 text-success">
+                   Active
+                 </Badge>
               </div>
             </CardContent>
           </Card>
@@ -122,11 +123,11 @@ const Admin = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Inactive Students</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.inactive}</p>
+                  <p className="text-2xl font-bold text-destructive">{stats.inactive}</p>
                 </div>
-                <Badge variant="destructive" className="bg-red-100 text-red-800">
-                  Inactive
-                </Badge>
+                 <Badge variant="destructive">
+                   Inactive
+                 </Badge>
               </div>
             </CardContent>
           </Card>
@@ -146,8 +147,8 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Student Management */}
-        <Card className="shadow-elegant">
+      {/* Student Management */}
+      <Card className="shadow-card">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -164,10 +165,10 @@ const Admin = () => {
                   <Download className="h-4 w-4" />
                   Export
                 </Button>
-                <Button variant="hero">
-                  <Plus className="h-4 w-4" />
-                  Add Student
-                </Button>
+                 <Button>
+                   <Plus className="h-4 w-4" />
+                   Add Student
+                 </Button>
               </div>
             </div>
           </CardHeader>
@@ -218,10 +219,10 @@ const Admin = () => {
                       <TableCell>{student.department}</TableCell>
                       <TableCell>{student.email}</TableCell>
                       <TableCell>
-                        <Badge 
-                          variant={student.status === "active" ? "default" : "destructive"}
-                          className={student.status === "active" ? "bg-green-100 text-green-800" : ""}
-                        >
+                         <Badge 
+                           variant={student.status === "active" ? "default" : "destructive"}
+                           className={student.status === "active" ? "bg-success/10 text-success" : ""}
+                         >
                           {student.status}
                         </Badge>
                       </TableCell>
@@ -255,7 +256,6 @@ const Admin = () => {
             )}
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 };
