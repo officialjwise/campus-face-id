@@ -262,15 +262,17 @@ export default function FaceDetectionCamera({
                   )}
                   
                   {stream && (
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
                       <Button 
                         onClick={capturePhoto} 
                         disabled={isCapturing || (requireFaceDetection && !faceDetected)}
                         size="lg"
                         className="rounded-full h-16 w-16 p-0"
+                        aria-label="Capture Photo"
                       >
                         <Camera className="h-8 w-8" />
                       </Button>
+                      <span className="mt-2 text-sm font-medium text-foreground">Capture</span>
                     </div>
                   )}
 

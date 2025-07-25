@@ -55,8 +55,10 @@ const Colleges = () => {
 
   const stats = {
     total: colleges.length,
-    totalDepartments: colleges.reduce((acc, college) => acc + college.departments.length, 0),
-    avgDepartments: Math.round(colleges.reduce((acc, college) => acc + college.departments.length, 0) / colleges.length),
+    totalDepartments: colleges.reduce((acc, college) => acc + (college.departments?.length || 0), 0),
+    avgDepartments: colleges.length > 0
+      ? Math.round(colleges.reduce((acc, college) => acc + (college.departments?.length || 0), 0) / colleges.length)
+      : 0,
   };
 
   const handleCreateCollege = () => {
@@ -80,9 +82,13 @@ const Colleges = () => {
   };
 
   const handleSubmitCollege = (collegeData: College) => {
+    const safeCollegeData = {
+      ...collegeData,
+      departments: collegeData.departments || [],
+    };
     if (modalMode === "create") {
       const newCollege = {
-        ...collegeData,
+        ...safeCollegeData,
         id: Date.now().toString(),
         createdAt: new Date().toISOString().split('T')[0],
       };
@@ -93,7 +99,7 @@ const Colleges = () => {
       });
     } else {
       setColleges(colleges.map(c => 
-        c.id === selectedCollege?.id ? { ...collegeData, id: c.id } : c
+        c.id === selectedCollege?.id ? { ...safeCollegeData, id: c.id } : c
       ));
       toast({
         title: "College updated",
@@ -209,14 +215,14 @@ const Colleges = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {college.departments.slice(0, 2).map((dept, index) => (
+                        {(college.departments || []).slice(0, 2).map((dept, index) => (
                           <Badge key={index} variant="secondary" className="text-xs">
                             {dept}
                           </Badge>
                         ))}
-                        {college.departments.length > 2 && (
+                        {(college.departments || []).length > 2 && (
                           <Badge variant="outline" className="text-xs">
-                            +{college.departments.length - 2} more
+                            +{(college.departments || []).length - 2} more
                           </Badge>
                         )}
                       </div>

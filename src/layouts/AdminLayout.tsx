@@ -25,7 +25,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="flex-1 flex flex-col overflow-hidden">
           <AdminHeader isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
           <main className="flex-1 overflow-auto">
-            <div className="container mx-auto p-6">
+            <div className="p-4 w-full">
               {children}
             </div>
           </main>
