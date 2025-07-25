@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import CameraCapture from "@/components/CameraCapture";
+import FaceDetectionCamera from "@/components/FaceDetectionCamera";
 import { Scan, User, Mail, GraduationCap, Building, Calendar } from "lucide-react";
 
 interface StudentDetails {
@@ -23,7 +23,7 @@ const Recognition = () => {
   const [studentDetails, setStudentDetails] = useState<StudentDetails | null>(null);
   const [scanResult, setScanResult] = useState<"success" | "not-found" | null>(null);
 
-  const handleFaceCapture = async (imageBlob: Blob) => {
+  const handleFaceCapture = async (imageBlob: Blob, faceDetected: boolean) => {
     setIsScanning(true);
     setScanResult(null);
     setStudentDetails(null);
@@ -32,6 +32,7 @@ const Recognition = () => {
       // Simulate API call for facial recognition
       const formData = new FormData();
       formData.append('image', imageBlob);
+      formData.append('faceDetected', faceDetected.toString());
 
       // TODO: Replace with actual API call to FastAPI backend
       // const response = await fetch('/api/recognition/identify', {
@@ -42,8 +43,9 @@ const Recognition = () => {
       // Simulate recognition process
       await new Promise(resolve => setTimeout(resolve, 3000));
 
-      // Mock response - in real app, this comes from backend
-      const mockSuccess = Math.random() > 0.3; // 70% success rate for demo
+      // Mock response - better success rate if face was detected
+      const baseSuccessRate = faceDetected ? 0.8 : 0.4; // 80% vs 40% success rate
+      const mockSuccess = Math.random() < baseSuccessRate;
 
       if (mockSuccess) {
         const mockStudent: StudentDetails = {
@@ -62,13 +64,15 @@ const Recognition = () => {
         
         toast({
           title: "Student identified!",
-          description: `Welcome back, ${mockStudent.fullName}`,
+          description: `Welcome back, ${mockStudent.fullName}${faceDetected ? ' (Face detected)' : ''}`,
         });
       } else {
         setScanResult("not-found");
         toast({
           title: "Student not found",
-          description: "No matching student found in the database. Please try again or register first.",
+          description: faceDetected 
+            ? "Face detected but no matching student found in the database." 
+            : "No face detected and no matching student found. Try capturing with your face visible.",
           variant: "destructive",
         });
       }
@@ -110,7 +114,11 @@ const Recognition = () => {
                 </CardDescription>
               </CardHeader>
             </Card>
-            <CameraCapture onCapture={handleFaceCapture} isCapturing={isScanning} />
+            <FaceDetectionCamera 
+              onCapture={handleFaceCapture} 
+              isCapturing={isScanning}
+              requireFaceDetection={true}
+            />
             
             {scanResult && (
               <div className="mt-4 text-center">

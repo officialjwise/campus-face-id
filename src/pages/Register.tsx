@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import CameraCapture from "@/components/CameraCapture";
+import FaceDetectionCamera from "@/components/FaceDetectionCamera";
 import { UserPlus, Save, Sparkles } from "lucide-react";
 import { colleges, getDepartmentsByCollege } from "@/data/colleges";
 
@@ -46,11 +46,11 @@ const Register = () => {
     }
   };
 
-  const handlePhotoCapture = (blob: Blob) => {
+  const handlePhotoCapture = (blob: Blob, faceDetected: boolean) => {
     setFormData(prev => ({ ...prev, photo: blob }));
     toast({
       title: "Photo captured successfully",
-      description: "Your photo has been captured and will be included in the registration.",
+      description: `Your photo has been captured${faceDetected ? ' with face detected' : ''} and will be included in the registration.`,
     });
   };
 
@@ -373,7 +373,11 @@ const Register = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-3 sm:p-6">
-                <CameraCapture onCapture={handlePhotoCapture} isCapturing={isSubmitting} />
+                <FaceDetectionCamera 
+                  onCapture={handlePhotoCapture} 
+                  isCapturing={isSubmitting}
+                  requireFaceDetection={true}
+                />
                 <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
                   <p className="text-xs text-primary text-center">
                     Photo capture is required for registration. Ensure the student is looking directly at the camera with good lighting.
