@@ -1,11 +1,13 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ApiProvider } from "@/providers/ApiProvider";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import Navigation from "@/components/Navigation";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import AuthGuard from "@/components/AuthGuard";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Recognition from "./pages/Recognition";
@@ -19,17 +21,16 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
-
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="ui-theme">
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Client routes with regular navigation */}
+  <ErrorBoundary>
+    <ApiProvider>
+      <ThemeProvider defaultTheme="system" storageKey="ui-theme">
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Client routes with regular navigation */}
             <Route path="/" element={
               <div className="min-h-screen bg-background">
                 <Navigation />
@@ -57,18 +58,20 @@ const App = () => (
             
             <Route path="/login" element={<Login />} />
             
-            {/* Admin routes with admin layout */}
+            {/* Admin routes with admin layout - Protected */}
             <Route path="/admin/*" element={
-              <AdminLayout>
-                <Routes>
-                  <Route path="" element={<Admin />} />
-                  <Route path="students" element={<StudentManagement />} />
-                  <Route path="colleges" element={<Colleges />} />
-                  <Route path="departments" element={<Departments />} />
-                  <Route path="reports" element={<Reports />} />
-                  <Route path="settings" element={<Settings />} />
-                </Routes>
-              </AdminLayout>
+              <AuthGuard>
+                <AdminLayout>
+                  <Routes>
+                    <Route path="" element={<Admin />} />
+                    <Route path="students" element={<StudentManagement />} />
+                    <Route path="colleges" element={<Colleges />} />
+                    <Route path="departments" element={<Departments />} />
+                    <Route path="reports" element={<Reports />} />
+                    <Route path="settings" element={<Settings />} />
+                  </Routes>
+                </AdminLayout>
+              </AuthGuard>
             } />
             
             {/* Catch-all route */}
@@ -77,7 +80,8 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
-  </QueryClientProvider>
+  </ApiProvider>
+  </ErrorBoundary>
 );
 
 export default App;

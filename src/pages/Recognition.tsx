@@ -5,86 +5,67 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import FaceDetectionCamera from "@/components/FaceDetectionCamera";
 import { Scan, User, Mail, GraduationCap, Building, Calendar } from "lucide-react";
-
-interface StudentDetails {
-  studentId: string;
-  indexNumber: string;
-  fullName: string;
-  college: string;
-  department: string;
-  email: string;
-  registrationDate: string;
-  lastSeen?: string;
-}
+import { useFaceRecognition } from "@/hooks/useStudents";
+import type { Student } from "@/types/api";
 
 const Recognition = () => {
   const { toast } = useToast();
-  const [isScanning, setIsScanning] = useState(false);
-  const [studentDetails, setStudentDetails] = useState<StudentDetails | null>(null);
+  const [studentDetails, setStudentDetails] = useState<Student | null>(null);
   const [scanResult, setScanResult] = useState<"success" | "not-found" | null>(null);
+  const [recognitionData, setRecognitionData] = useState<{ matched: boolean; confidence?: number } | null>(null);
+
+  const faceRecognition = useFaceRecognition();
 
   const handleFaceCapture = async (imageBlob: Blob, faceDetected: boolean) => {
-    setIsScanning(true);
     setScanResult(null);
     setStudentDetails(null);
+    setRecognitionData(null);
 
-    try {
-      // Simulate API call for facial recognition
-      const formData = new FormData();
-      formData.append('image', imageBlob);
-      formData.append('faceDetected', faceDetected.toString());
-
-      // TODO: Replace with actual API call to FastAPI backend
-      // const response = await fetch('/api/recognition/identify', {
-      //   method: 'POST',
-      //   body: formData,
-      // });
-
-      // Simulate recognition process
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      // Mock response - better success rate if face was detected
-      const baseSuccessRate = faceDetected ? 0.8 : 0.4; // 80% vs 40% success rate
-      const mockSuccess = Math.random() < baseSuccessRate;
-
-      if (mockSuccess) {
-        const mockStudent: StudentDetails = {
-          studentId: "STU001",
-          indexNumber: "IND2024001",
-          fullName: "John Doe",
-          college: "College of Computing",
-          department: "Computer Science",
-          email: "john.doe@university.edu",
-          registrationDate: "2024-01-15",
-          lastSeen: new Date().toISOString(),
-        };
-
-        setStudentDetails(mockStudent);
-        setScanResult("success");
-        
-        toast({
-          title: "Student identified!",
-          description: `Welcome back, ${mockStudent.fullName}${faceDetected ? ' (Face detected)' : ''}`,
-        });
-      } else {
-        setScanResult("not-found");
-        toast({
-          title: "Student not found",
-          description: faceDetected 
-            ? "Face detected but no matching student found in the database." 
-            : "No face detected and no matching student found. Try capturing with your face visible.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
+    if (!faceDetected) {
       toast({
-        title: "Recognition failed",
-        description: "An error occurred during facial recognition. Please try again.",
+        title: "No face detected",
+        description: "Please ensure your face is clearly visible in the camera frame.",
         variant: "destructive",
       });
-    } finally {
-      setIsScanning(false);
+      return;
     }
+
+    // Convert blob to File
+    const imageFile = new File([imageBlob], 'face-capture.jpg', { type: 'image/jpeg' });
+
+    faceRecognition.mutate(imageFile, {
+      onSuccess: (response) => {
+        setRecognitionData({
+          matched: response.matched,
+          confidence: response.confidence,
+        });
+
+        if (response.matched && response.student) {
+          setStudentDetails(response.student);
+          setScanResult("success");
+          
+          toast({
+            title: "Student identified!",
+            description: `Welcome back, ${response.student.first_name} ${response.student.last_name}! Confidence: ${Math.round((response.confidence || 0) * 100)}%`,
+          });
+        } else {
+          setScanResult("not-found");
+          toast({
+            title: "Student not found",
+            description: "Face detected but no matching student found in the database.",
+            variant: "destructive",
+          });
+        }
+      },
+      onError: (error) => {
+        setScanResult("not-found");
+        toast({
+          title: "Recognition failed",
+          description: error.message || "An error occurred during facial recognition. Please try again.",
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   const handleReset = () => {
@@ -116,7 +97,7 @@ const Recognition = () => {
             </Card>
             <FaceDetectionCamera 
               onCapture={handleFaceCapture} 
-              isCapturing={isScanning}
+              isCapturing={faceRecognition.isPending}
               requireFaceDetection={true}
             />
             
@@ -142,7 +123,7 @@ const Recognition = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {isScanning && (
+                {faceRecognition.isPending && (
                   <div className="flex flex-col items-center justify-center py-8 space-y-4">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                     <p className="text-muted-foreground">Processing facial recognition...</p>
@@ -167,9 +148,11 @@ const Recognition = () => {
                   <div className="space-y-6">
                     <div className="text-center">
                       <Badge variant="default" className="mb-2">
-                        ✓ Identified
+                        ✓ Identified {recognitionData?.confidence && `(${Math.round(recognitionData.confidence * 100)}%)`}
                       </Badge>
-                      <h3 className="text-2xl font-bold text-foreground">{studentDetails.fullName}</h3>
+                      <h3 className="text-2xl font-bold text-foreground">
+                        {studentDetails.first_name} {studentDetails.last_name}
+                      </h3>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4">
@@ -177,15 +160,7 @@ const Recognition = () => {
                         <User className="h-5 w-5 text-primary" />
                         <div>
                           <p className="text-sm text-muted-foreground">Student ID</p>
-                          <p className="font-medium">{studentDetails.studentId}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg">
-                        <User className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Index Number</p>
-                          <p className="font-medium">{studentDetails.indexNumber}</p>
+                          <p className="font-medium">{studentDetails.student_id || studentDetails.id}</p>
                         </div>
                       </div>
 
@@ -201,7 +176,9 @@ const Recognition = () => {
                         <Building className="h-5 w-5 text-primary" />
                         <div>
                           <p className="text-sm text-muted-foreground">College</p>
-                          <p className="font-medium">{studentDetails.college}</p>
+                          <p className="font-medium">
+                            {studentDetails.college?.name || 'College information not available'}
+                          </p>
                         </div>
                       </div>
 
@@ -209,36 +186,38 @@ const Recognition = () => {
                         <GraduationCap className="h-5 w-5 text-primary" />
                         <div>
                           <p className="text-sm text-muted-foreground">Department</p>
-                          <p className="font-medium">{studentDetails.department}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg">
-                        <Calendar className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Registration Date</p>
                           <p className="font-medium">
-                            {new Date(studentDetails.registrationDate).toLocaleDateString()}
+                            {studentDetails.department?.name || 'Department information not available'}
                           </p>
                         </div>
                       </div>
 
-                      {studentDetails.lastSeen && (
-                        <div className="flex items-center space-x-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                      {studentDetails.created_at && (
+                        <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg">
                           <Calendar className="h-5 w-5 text-primary" />
                           <div>
-                            <p className="text-sm text-muted-foreground">Last Seen</p>
-                            <p className="font-medium text-primary">
-                              {new Date(studentDetails.lastSeen).toLocaleString()}
+                            <p className="text-sm text-muted-foreground">Registration Date</p>
+                            <p className="font-medium">
+                              {new Date(studentDetails.created_at).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
                       )}
+
+                      <div className="flex items-center space-x-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                        <Calendar className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Recognized At</p>
+                          <p className="font-medium text-primary">
+                            {new Date().toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {!isScanning && !scanResult && (
+                {!faceRecognition.isPending && !scanResult && (
                   <div className="text-center py-8 space-y-4">
                     <Scan className="h-16 w-16 text-muted-foreground mx-auto" />
                     <div>

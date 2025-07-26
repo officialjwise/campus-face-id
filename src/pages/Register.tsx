@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import FaceDetectionCamera from "@/components/FaceDetectionCamera";
 import { UserPlus, Save, Sparkles } from "lucide-react";
-import { colleges, getDepartmentsByCollege } from "@/data/colleges";
+import { useColleges } from "@/hooks/useColleges";
+import { useDepartmentsByCollege } from "@/hooks/useDepartments";
+import { useRegisterStudent } from "@/hooks/useStudents";
 
 interface StudentFormData {
   firstName: string;
@@ -15,8 +17,10 @@ interface StudentFormData {
   lastName: string;
   studentId: string;
   indexNumber: string;
-  college: string;
-  department: string;
+  collegeId: string;
+  collegeName: string;
+  departmentId: string;
+  departmentName: string;
   email: string;
   photo?: Blob;
 }
@@ -29,21 +33,59 @@ const Register = () => {
     lastName: "",
     studentId: "",
     indexNumber: "",
-    college: "",
-    department: "",
+    collegeId: "",
+    collegeName: "",
+    departmentId: "",
+    departmentName: "",
     email: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [availableDepartments, setAvailableDepartments] = useState<string[]>([]);
+
+  // API hooks
+  const { data: colleges, isLoading: collegesLoading } = useColleges();
+  
+  // Ensure colleges is always an array
+  const collegesList = Array.isArray(colleges) ? colleges : [];
+  
+  // Find the selected college object to get its ID
+  const selectedCollege = collegesList.find(college => college.id === formData.collegeId);
+  const { data: departments, isLoading: departmentsLoading } = useDepartmentsByCollege(
+    formData.collegeId || ""
+  );
+  
+  // Ensure departments is always an array
+  const departmentsList = Array.isArray(departments) ? departments : [];
+  
+  const registerStudent = useRegisterStudent();
 
   const handleInputChange = (field: keyof StudentFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Reset department when college changes
-    if (field === 'college') {
-      setFormData(prev => ({ ...prev, department: '' }));
-      setAvailableDepartments(getDepartmentsByCollege(value));
+    if (field === 'collegeId') {
+      setFormData(prev => ({ ...prev, departmentId: '', departmentName: '' }));
     }
+  };
+
+  // Handler for college selection (stores both ID and name)
+  const handleCollegeChange = (collegeId: string) => {
+    const college = collegesList.find(c => c.id === collegeId);
+    setFormData(prev => ({ 
+      ...prev, 
+      collegeId, 
+      collegeName: college?.name || '',
+      departmentId: '',
+      departmentName: ''
+    }));
+  };
+
+  // Handler for department selection (stores both ID and name)
+  const handleDepartmentChange = (departmentId: string) => {
+    const department = departmentsList.find(d => d.id === departmentId);
+    setFormData(prev => ({ 
+      ...prev, 
+      departmentId, 
+      departmentName: department?.name || ''
+    }));
   };
 
   const handlePhotoCapture = (blob: Blob, faceDetected: boolean) => {
@@ -56,10 +98,9 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
     // Validation
-    const requiredFields = ['firstName', 'lastName', 'studentId', 'indexNumber', 'college', 'department', 'email'];
+    const requiredFields = ['firstName', 'lastName', 'studentId', 'indexNumber', 'collegeId', 'departmentId', 'email'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof StudentFormData]);
 
     if (missingFields.length > 0) {
@@ -68,7 +109,6 @@ const Register = () => {
         description: `Please fill in: ${missingFields.join(', ')}`,
         variant: "destructive",
       });
-      setIsSubmitting(false);
       return;
     }
 
@@ -79,7 +119,6 @@ const Register = () => {
         description: "Student ID must be exactly 8 digits.",
         variant: "destructive",
       });
-      setIsSubmitting(false);
       return;
     }
 
@@ -90,7 +129,6 @@ const Register = () => {
         description: "Index Number must be exactly 7 digits.",
         variant: "destructive",
       });
-      setIsSubmitting(false);
       return;
     }
 
@@ -100,7 +138,6 @@ const Register = () => {
         description: "Please capture your photo before submitting the registration.",
         variant: "destructive",
       });
-      setIsSubmitting(false);
       return;
     }
 
@@ -112,59 +149,61 @@ const Register = () => {
         description: "Please enter a valid email address.",
         variant: "destructive",
       });
-      setIsSubmitting(false);
       return;
     }
 
-    try {
-      // Simulate API call - replace with actual backend integration
-      const formDataToSend = new FormData();
-      formDataToSend.append('firstName', formData.firstName);
-      formDataToSend.append('middleName', formData.middleName);
-      formDataToSend.append('lastName', formData.lastName);
-      formDataToSend.append('studentId', formData.studentId);
-      formDataToSend.append('indexNumber', formData.indexNumber);
-      formDataToSend.append('college', formData.college);
-      formDataToSend.append('department', formData.department);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('photo', formData.photo);
-
-      // TODO: Replace with actual API call to FastAPI backend
-      // const response = await fetch('/api/students/register', {
-      //   method: 'POST',
-      //   body: formDataToSend,
-      // });
-
-      // Simulate successful registration
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
+    // Check if college and department are selected
+    if (!formData.collegeId || !formData.departmentId) {
       toast({
-        title: "Registration successful!",
-        description: `Student ${formData.firstName} ${formData.lastName} has been registered successfully.`,
-      });
-
-      // Reset form
-      setFormData({
-        firstName: "",
-        middleName: "",
-        lastName: "",
-        studentId: "",
-        indexNumber: "",
-        college: "",
-        department: "",
-        email: "",
-      });
-      setAvailableDepartments([]);
-
-    } catch (error) {
-      toast({
-        title: "Registration failed",
-        description: "An error occurred during registration. Please try again.",
+        title: "Missing selection",
+        description: "Please select both college and department.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    // Prepare student data for API
+    const studentData = {
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      email: formData.email,
+      college_id: formData.collegeId,
+      department_id: formData.departmentId,
+      student_id: formData.studentId,
+      // Additional fields that might be useful
+      ...(formData.middleName && { middle_name: formData.middleName }),
+      // Note: photo upload will be handled separately after student creation
+    };
+
+    registerStudent.mutate(studentData, {
+      onSuccess: (newStudent) => {
+        toast({
+          title: "Registration successful!",
+          description: `Student ${formData.firstName} ${formData.lastName} has been registered successfully.`,
+        });
+
+        // Reset form
+        setFormData({
+          firstName: "",
+          middleName: "",
+          lastName: "",
+          studentId: "",
+          indexNumber: "",
+          collegeId: "",
+          collegeName: "",
+          departmentId: "",
+          departmentName: "",
+          email: "",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Registration failed",
+          description: error.message || "An error occurred during registration. Please try again.",
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   return (
@@ -306,13 +345,13 @@ const Register = () => {
                         <Label htmlFor="college" className="text-sm font-medium text-foreground">
                           College *
                         </Label>
-                        <Select onValueChange={(value) => handleInputChange('college', value)} value={formData.college}>
+                        <Select onValueChange={handleCollegeChange} value={formData.collegeId}>
                           <SelectTrigger className="h-10">
                             <SelectValue placeholder="Select your college" />
                           </SelectTrigger>
                           <SelectContent>
-                            {colleges.map((college) => (
-                              <SelectItem key={college.name} value={college.name}>
+                            {collegesList.map((college) => (
+                              <SelectItem key={college.id} value={college.id}>
                                 {college.name}
                               </SelectItem>
                             ))}
@@ -324,17 +363,17 @@ const Register = () => {
                           Department *
                         </Label>
                         <Select 
-                          onValueChange={(value) => handleInputChange('department', value)} 
-                          value={formData.department}
-                          disabled={!formData.college}
+                          onValueChange={handleDepartmentChange} 
+                          value={formData.departmentId}
+                          disabled={!formData.collegeId}
                         >
                           <SelectTrigger className="h-10">
-                            <SelectValue placeholder={formData.college ? "Select your department" : "Select college first"} />
+                            <SelectValue placeholder={formData.collegeId ? "Select your department" : "Select college first"} />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableDepartments.map((dept) => (
-                              <SelectItem key={dept} value={dept}>
-                                {dept}
+                            {departmentsList.map((dept) => (
+                              <SelectItem key={dept.id} value={dept.id}>
+                                {dept.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -348,11 +387,11 @@ const Register = () => {
                     <Button 
                       type="submit" 
                       className="w-full sm:w-auto sm:px-8 h-11"
-                      disabled={isSubmitting}
+                      disabled={registerStudent.isPending || collegesLoading || departmentsLoading}
                       size="lg"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      {isSubmitting ? "Registering Student..." : "Register Student"}
+                      {registerStudent.isPending ? "Registering Student..." : "Register Student"}
                     </Button>
                   </div>
                 </form>
@@ -375,7 +414,7 @@ const Register = () => {
               <CardContent className="p-3 sm:p-6">
                 <FaceDetectionCamera 
                   onCapture={handlePhotoCapture} 
-                  isCapturing={isSubmitting}
+                  isCapturing={registerStudent.isPending}
                   requireFaceDetection={true}
                 />
                 <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">

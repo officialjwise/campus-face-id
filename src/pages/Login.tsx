@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Shield } from "lucide-react";
+import { useRequestLoginOTP, useVerifyLoginOTP, useLogin } from "@/hooks/useAuth";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -31,11 +32,17 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
-  const [isLoading, setIsLoading] = useState(false);
   const [showOTP, setShowOTP] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [useDirectLogin, setUseDirectLogin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // API hooks
+  const requestLoginOTP = useRequestLoginOTP();
+  const verifyLoginOTP = useVerifyLoginOTP();
+  const directLogin = useLogin();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -45,49 +52,91 @@ export default function Login() {
     },
   });
 
+
   const handleLogin = async (data: LoginFormData) => {
-    setIsLoading(true);
+    setUserEmail(data.email);
     
-    // Simulate API call
-    setTimeout(() => {
-      // Check credentials (demo purposes)
-      if (data.email === "admin@university.edu" && data.password === "admin123") {
-        setShowOTP(true);
-        toast({
-          title: "OTP Sent",
-          description: "Please check your email for the verification code.",
-        });
-      } else {
-        toast({
-          title: "Invalid Credentials",
-          description: "Please check your email and password.",
-          variant: "destructive",
-        });
-      }
-      setIsLoading(false);
-    }, 1500);
+    if (useDirectLogin) {
+      // Use direct login (legacy method)
+      directLogin.mutate({
+        email: data.email,
+        password: data.password
+      }, {
+        onSuccess: () => {
+          toast({
+            title: "Login Successful",
+            description: "Welcome to the Admin Panel!",
+          });
+          navigate("/admin");
+        },
+        onError: (error) => {
+          console.error('Direct login error details:', error);
+          toast({
+            title: "Login Failed",
+            description: error.message || "Invalid credentials",
+            variant: "destructive",
+          });
+        },
+      });
+    } else {
+      // Use OTP-based login (recommended)
+      requestLoginOTP.mutate({ email: data.email }, {
+        onSuccess: (response) => {
+          setShowOTP(true);
+          toast({
+            title: "OTP Sent",
+            description: `${response.message} Code expires in ${Math.floor(response.otp_expires_in / 60)} minutes.`,
+          });
+        },
+        onError: (error) => {
+          console.error('OTP request error details:', error);
+          
+          // More specific error handling
+          let errorMessage = "Please try again";
+          if (error.message.includes('422')) {
+            errorMessage = "Invalid email format or user not found. Please check your email address.";
+          } else if (error.message.includes('429')) {
+            errorMessage = "Too many requests. Please wait a moment before trying again.";
+          } else if (error.message.includes('500')) {
+            errorMessage = "Server error. Please try again later or contact support.";
+          }
+          
+          toast({
+            title: "Failed to Send OTP",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        },
+      });
+    }
   };
 
   const handleOTPVerification = () => {
-    setIsLoading(true);
-    
-    // Simulate OTP verification
-    setTimeout(() => {
-      if (otpCode === "123456") {
+    if (!userEmail || !otpCode) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter the OTP code.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    verifyLoginOTP.mutate({ email: userEmail, otp: otpCode }, {
+      onSuccess: () => {
         toast({
           title: "Login Successful",
           description: "Welcome to the Admin Panel!",
         });
         navigate("/admin");
-      } else {
+      },
+      onError: (error) => {
         toast({
           title: "Invalid OTP",
-          description: "Please enter the correct verification code.",
+          description: error.message || "Please enter the correct verification code.",
           variant: "destructive",
         });
-      }
-      setIsLoading(false);
-    }, 1000);
+      },
+    });
   };
 
   const handleForgotPassword = () => {
@@ -101,9 +150,10 @@ export default function Login() {
       return;
     }
 
+    // For now, just show a message since password reset isn't implemented in the API
     toast({
-      title: "Reset Link Sent",
-      description: "Please check your email for password reset instructions.",
+      title: "Feature Not Available",
+      description: "Password reset feature will be available soon. Please contact your administrator.",
     });
   };
 
@@ -139,15 +189,18 @@ export default function Login() {
             </div>
             <Button
               onClick={handleOTPVerification}
-              disabled={isLoading || otpCode.length !== 6}
+              disabled={verifyLoginOTP.isPending || otpCode.length !== 6}
               className="w-full"
             >
-              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {verifyLoginOTP.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Verify & Login
             </Button>
             <Button
               variant="outline"
-              onClick={() => setShowOTP(false)}
+              onClick={() => {
+                setShowOTP(false);
+                setOtpCode("");
+              }}
               className="w-full"
             >
               Back to Login
@@ -203,10 +256,28 @@ export default function Login() {
                 )}
               />
 
-              <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Login
+              <Button 
+                type="submit" 
+                disabled={requestLoginOTP.isPending || directLogin.isPending} 
+                className="w-full"
+              >
+                {(requestLoginOTP.isPending || directLogin.isPending) && 
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {useDirectLogin ? "Login" : "Send OTP"}
               </Button>
+
+              <div className="flex items-center space-x-2 text-sm">
+                <input
+                  type="checkbox"
+                  id="directLogin"
+                  checked={useDirectLogin}
+                  onChange={(e) => setUseDirectLogin(e.target.checked)}
+                  className="rounded"
+                />
+                <label htmlFor="directLogin" className="text-muted-foreground">
+                  Use direct login (legacy)
+                </label>
+              </div>
 
               <Button
                 type="button"
@@ -220,10 +291,9 @@ export default function Login() {
           </Form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Demo Credentials:</p>
-            <p>Email: admin@university.edu</p>
-            <p>Password: admin123</p>
-            <p>OTP: 123456</p>
+            <p>🔗 API Integration Active</p>
+            <p>Backend URL: http://localhost:8000</p>
+            <p>Recommended: Use OTP-based login for better security</p>
           </div>
         </CardContent>
       </Card>

@@ -18,9 +18,12 @@ import {
   Settings, 
   LogOut, 
   User,
-  ChevronDown
+  ChevronDown,
+  Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useLogout } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminHeaderProps {
   isDarkMode: boolean;
@@ -29,6 +32,26 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ isDarkMode, toggleDarkMode }: AdminHeaderProps) {
   const [notifications] = useState(5);
+  const { toast } = useToast();
+  const logout = useLogout();
+
+  const handleLogout = () => {
+    logout.mutate(undefined, {
+      onSuccess: () => {
+        toast({
+          title: "Logged out successfully",
+          description: "You have been logged out of your account.",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Logout failed",
+          description: error.message || "Failed to logout. Please try again.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   return (
     <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -95,9 +118,17 @@ export function AdminHeader({ isDarkMode, toggleDarkMode }: AdminHeaderProps) {
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
+              <DropdownMenuItem 
+                className="text-destructive cursor-pointer" 
+                onClick={handleLogout}
+                disabled={logout.isPending}
+              >
+                {logout.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <LogOut className="mr-2 h-4 w-4" />
+                )}
+                {logout.isPending ? 'Logging out...' : 'Logout'}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

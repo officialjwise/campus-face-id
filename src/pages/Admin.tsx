@@ -1,21 +1,15 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, TrendingUp, BarChart3, Building2, GraduationCap } from "lucide-react";
+import { Users, TrendingUp, BarChart3, Building2, GraduationCap, Loader2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from "recharts";
+import { useAdminStats } from "@/hooks/useAdmin";
 
 const Admin = () => {
-  // Mock statistics data for dashboard
-  const stats = {
-    totalStudents: 594,
-    activeStudents: 569,
-    inactiveStudents: 25,
-    recentRegistrations: 23,
-    totalColleges: 4,
-    totalDepartments: 12,
-  };
+  // Fetch real stats from API
+  const { data: stats, isLoading: statsLoading, error: statsError } = useAdminStats();
 
-  // Chart data
+  // Mock chart data (these could be additional API endpoints)
   const registrationData = [
     { month: "Jan", registrations: 45 },
     { month: "Feb", registrations: 52 },
@@ -48,6 +42,39 @@ const Admin = () => {
     { metric: "Retention", current: 89, target: 90 },
   ];
 
+  // Loading state
+  if (statsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Loading dashboard...</span>
+      </div>
+    );
+  }
+
+  // Error state
+  if (statsError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground">University management system overview</p>
+          </div>
+          <Badge variant="destructive">
+            API Connection Error
+          </Badge>
+        </div>
+        <Card className="shadow-elegant">
+          <CardContent className="p-6 text-center">
+            <p className="text-destructive">Failed to load dashboard data. Please check your connection to the backend API.</p>
+            <p className="text-sm text-muted-foreground mt-2">Backend URL: http://localhost:8000</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -67,7 +94,7 @@ const Admin = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Students</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalStudents}</p>
+                <p className="text-2xl font-bold text-foreground">{stats?.total_students || 0}</p>
               </div>
               <Users className="h-8 w-8 text-primary" />
             </div>
@@ -78,11 +105,11 @@ const Admin = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Active Students</p>
-                <p className="text-2xl font-bold text-success">{stats.activeStudents}</p>
+                <p className="text-sm text-muted-foreground">Recognition Events</p>
+                <p className="text-2xl font-bold text-success">{stats?.recognition_events_today || 0}</p>
               </div>
               <Badge className="bg-success/10 text-success">
-                Active
+                Today
               </Badge>
             </div>
           </CardContent>
@@ -92,25 +119,11 @@ const Admin = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Inactive Students</p>
-                <p className="text-2xl font-bold text-destructive">{stats.inactiveStudents}</p>
+                <p className="text-sm text-muted-foreground">Admins</p>
+                <p className="text-2xl font-bold text-info">{stats?.admins || 0}</p>
               </div>
-              <Badge variant="destructive">
-                Inactive
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-elegant">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Recent (7 days)</p>
-                <p className="text-2xl font-bold text-primary">{stats.recentRegistrations}</p>
-              </div>
-              <Badge className="bg-primary/10 text-primary">
-                New
+              <Badge className="bg-info/10 text-info">
+                Staff
               </Badge>
             </div>
           </CardContent>
@@ -121,7 +134,7 @@ const Admin = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Colleges</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalColleges}</p>
+                <p className="text-2xl font-bold text-foreground">{stats?.total_colleges || 0}</p>
               </div>
               <Building2 className="h-8 w-8 text-info" />
             </div>
@@ -133,9 +146,23 @@ const Admin = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Departments</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalDepartments}</p>
+                <p className="text-2xl font-bold text-foreground">{stats?.total_departments || 0}</p>
               </div>
               <GraduationCap className="h-8 w-8 text-warning" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-elegant">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">API Status</p>
+                <p className="text-2xl font-bold text-success">✓</p>
+              </div>
+              <Badge className="bg-success/10 text-success">
+                Connected
+              </Badge>
             </div>
           </CardContent>
         </Card>

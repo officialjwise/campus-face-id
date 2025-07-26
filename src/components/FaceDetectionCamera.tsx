@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Camera, RefreshCw, Upload, Check, X, AlertCircle } from "lucide-react";
+import { Camera, RefreshCw, Upload, Check, X, AlertCircle, Loader2 } from "lucide-react";
 import { useFaceDetection, FaceDetectionResult } from '@/hooks/useFaceDetection';
 import { drawMultipleFaces } from '@/lib/faceDetectionUtils';
 
@@ -79,6 +79,7 @@ export default function FaceDetectionCamera({
             const video = videoRef.current;
             overlayCanvasRef.current.width = video.videoWidth;
             overlayCanvasRef.current.height = video.videoHeight;
+            console.log('Video loaded:', video.videoWidth, 'x', video.videoHeight);
           }
         };
       }
@@ -112,30 +113,52 @@ export default function FaceDetectionCamera({
       const video = videoRef.current;
       const canvas = canvasRef.current;
       
+      // Wait for video to be ready
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        console.warn('Video not ready for capture');
+        return;
+      }
+      
+      // Set canvas dimensions to match video
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        ctx.drawImage(video, 0, 0);
+        // Clear canvas first
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw the current video frame
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         // Get the captured image as a data URL for preview
         const imageDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        console.log('Image captured, data URL length:', imageDataUrl.length);
         setCapturedImage(imageDataUrl);
       }
     }
   }, [stream]);
 
-  const confirmCapture = useCallback(() => {
-    if (canvasRef.current) {
-      canvasRef.current.toBlob((blob) => {
+  const confirmCapture = useCallback(async () => {
+    if (canvasRef.current && capturedImage) {
+      try {
+        // Convert canvas to blob
+        const blob = await new Promise<Blob | null>((resolve) => {
+          canvasRef.current!.toBlob(resolve, "image/jpeg", 0.8);
+        });
+        
         if (blob) {
-          onCapture(blob, faceDetected);
-          setCapturedImage("");
+          console.log('Confirming capture with blob size:', blob.size);
+          await onCapture(blob, faceDetected);
+          setCapturedImage(""); // Clear the preview after successful capture
+        } else {
+          console.error('Failed to create blob from canvas');
         }
-      }, "image/jpeg", 0.8);
+      } catch (error) {
+        console.error('Error in confirmCapture:', error);
+      }
     }
-  }, [onCapture, faceDetected]);
+  }, [onCapture, faceDetected, capturedImage]);
 
   const retakePhoto = useCallback(() => {
     setCapturedImage("");
@@ -204,7 +227,9 @@ export default function FaceDetectionCamera({
                   src={capturedImage} 
                   alt="Captured photo" 
                   className="w-full rounded-lg bg-muted"
-                  style={{ maxHeight: '400px', objectFit: 'cover' }}
+                  style={{ maxHeight: '400px', objectFit: 'contain' }}
+                  onLoad={() => console.log('Captured image loaded successfully')}
+                  onError={(e) => console.error('Failed to load captured image:', e)}
                 />
                 <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
                   <Button 
@@ -212,23 +237,29 @@ export default function FaceDetectionCamera({
                     variant="outline"
                     size="lg"
                     className="rounded-full h-12 w-12 p-0"
+                    title="Retake Photo"
                   >
                     <X className="h-5 w-5" />
                   </Button>
                   <Button 
                     onClick={confirmCapture}
-                    disabled={isCapturing || (requireFaceDetection && !faceDetected)}
+                    disabled={isCapturing}
                     size="lg"
-                    className="rounded-full h-12 w-12 p-0 bg-primary"
+                    className="rounded-full h-12 w-12 p-0 bg-primary hover:bg-primary/90"
+                    title="Confirm and Submit"
                   >
-                    <Check className="h-5 w-5" />
+                    {isCapturing ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Check className="h-5 w-5" />
+                    )}
                   </Button>
                 </div>
-                {requireFaceDetection && !faceDetected && (
+                {requireFaceDetection && modelsLoaded && !faceDetected && (
                   <div className="absolute top-4 left-4 right-4">
-                    <Badge variant="destructive" className="w-full justify-center">
+                    <Badge variant="secondary" className="w-full justify-center">
                       <AlertCircle className="h-4 w-4 mr-1" />
-                      No face detected in captured image
+                      No face detected - capture is still allowed
                     </Badge>
                   </div>
                 )}
@@ -265,27 +296,47 @@ export default function FaceDetectionCamera({
                     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
                       <Button 
                         onClick={capturePhoto} 
-                        disabled={isCapturing || (requireFaceDetection && !faceDetected)}
+                        disabled={isCapturing}
                         size="lg"
                         className="rounded-full h-16 w-16 p-0"
                         aria-label="Capture Photo"
+                        title="Capture Photo"
                       >
                         <Camera className="h-8 w-8" />
                       </Button>
-                      <span className="mt-2 text-sm font-medium text-foreground">Capture</span>
+                      <span className="mt-2 text-sm font-medium text-foreground">
+                        Capture
+                      </span>
                     </div>
                   )}
 
                   {/* Face detection status */}
-                  {stream && modelsLoaded && (
+                  {stream && (
                     <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-                      <Badge 
-                        variant={faceDetected ? "default" : "secondary"}
-                        className={faceDetected ? "bg-green-600" : ""}
-                      >
-                        {faceDetected ? `${faceDetections.length} Face${faceDetections.length > 1 ? 's' : ''} Detected` : 'No Face Detected'}
-                      </Badge>
-                      {requireFaceDetection && !faceDetected && (
+                      {modelsLoaded ? (
+                        <Badge 
+                          variant={faceDetected ? "default" : "secondary"}
+                          className={faceDetected ? "bg-green-600" : ""}
+                        >
+                          {faceDetected ? (
+                            <>
+                              <Check className="h-3 w-3 mr-1" />
+                              {faceDetections.length} Face{faceDetections.length > 1 ? 's' : ''} Detected
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              No Face Detected
+                            </>
+                          )}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">
+                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                          Loading AI Models...
+                        </Badge>
+                      )}
+                      {requireFaceDetection && !faceDetected && modelsLoaded && (
                         <Badge variant="outline" className="bg-background/80">
                           <AlertCircle className="h-3 w-3 mr-1" />
                           Face Required
@@ -335,10 +386,16 @@ export default function FaceDetectionCamera({
           {capturedImage && (
             <div className="text-center space-y-2">
               <p className="text-sm text-muted-foreground">
-                Photo captured! {requireFaceDetection && !faceDetected 
-                  ? "No face detected - please retake or disable face detection requirement." 
-                  : "Click the checkmark to confirm or X to retake."}
+                Photo captured successfully! Click the checkmark to confirm and submit, or X to retake.
+                {requireFaceDetection && modelsLoaded && !faceDetected 
+                  ? " (No face detected, but photo will still be submitted)" 
+                  : ""}
               </p>
+              {isCapturing && (
+                <p className="text-xs text-primary">
+                  Submitting photo...
+                </p>
+              )}
             </div>
           )}
 

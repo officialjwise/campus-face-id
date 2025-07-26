@@ -20,35 +20,36 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Loader2 } from "lucide-react";
+import { useCreateCollege, useUpdateCollege } from "@/hooks/useColleges";
+import { useToast } from "@/hooks/use-toast";
+import type { College } from "@/types/api";
 
 const collegeSchema = z.object({
   name: z.string().min(2, "College name must be at least 2 characters"),
+  location: z.string().min(2, "Location must be at least 2 characters"),
   description: z.string().optional(),
 });
 
 type CollegeFormData = z.infer<typeof collegeSchema>;
 
-interface College {
-  id?: string;
-  name: string;
-  description?: string;
-  createdAt?: string;
-}
-
 interface CollegeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: College) => void;
   college?: College;
   mode: "create" | "edit";
 }
 
-export function CollegeModal({ isOpen, onClose, onSubmit, college, mode }: CollegeModalProps) {
+export function CollegeModal({ isOpen, onClose, college, mode }: CollegeModalProps) {
+  const { toast } = useToast();
+  const createCollege = useCreateCollege();
+  const updateCollege = useUpdateCollege();
+
   const form = useForm<CollegeFormData>({
     resolver: zodResolver(collegeSchema),
     defaultValues: {
       name: "",
+      location: "",
       description: "",
     },
   });
@@ -59,25 +60,62 @@ export function CollegeModal({ isOpen, onClose, onSubmit, college, mode }: Colle
     if (college && mode === "edit") {
       reset({
         name: college.name,
+        location: college.location || "",
         description: college.description || "",
       });
     } else {
       reset({
         name: "",
+        location: "",
         description: "",
       });
     }
   }, [college, mode, reset]);
 
   const handleSubmit = (data: CollegeFormData) => {
-    const collegeData: College = {
+    // Ensure required fields are present
+    const createData = {
       name: data.name,
+      location: data.location,
       description: data.description,
-      id: college?.id,
-      createdAt: college?.createdAt || new Date().toISOString().split('T')[0],
     };
-    onSubmit(collegeData);
-    onClose();
+
+    if (mode === "create") {
+      createCollege.mutate(createData, {
+        onSuccess: () => {
+          toast({
+            title: "College created",
+            description: `${data.name} has been added successfully.`,
+          });
+          onClose();
+          form.reset();
+        },
+        onError: (error) => {
+          toast({
+            title: "Failed to create college",
+            description: error.message || "An error occurred",
+            variant: "destructive",
+          });
+        },
+      });
+    } else if (college?.id) {
+      updateCollege.mutate({ id: college.id, data: createData }, {
+        onSuccess: () => {
+          toast({
+            title: "College updated",
+            description: `${data.name} has been updated successfully.`,
+          });
+          onClose();
+        },
+        onError: (error) => {
+          toast({
+            title: "Failed to update college",
+            description: error.message || "An error occurred",
+            variant: "destructive",
+          });
+        },
+      });
+    }
   };
 
   return (
@@ -107,6 +145,20 @@ export function CollegeModal({ isOpen, onClose, onSubmit, college, mode }: Colle
 
             <FormField
               control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter college location" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
@@ -124,12 +176,17 @@ export function CollegeModal({ isOpen, onClose, onSubmit, college, mode }: Colle
               )}
             />
 
-
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button 
+                type="submit" 
+                disabled={createCollege.isPending || updateCollege.isPending}
+              >
+                {(createCollege.isPending || updateCollege.isPending) && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
                 {mode === "create" ? "Add College" : "Update College"}
               </Button>
             </div>

@@ -4,17 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Building2, Search, Plus, Edit, Trash2, BookOpen } from "lucide-react";
+import { Building2, Search, Plus, Edit, Trash2, BookOpen, Loader2 } from "lucide-react";
 import { CollegeModal } from "@/components/modals/CollegeModal";
 import { useToast } from "@/hooks/use-toast";
-
-interface College {
-  id: string;
-  name: string;
-  description?: string;
-  departments: string[];
-  createdAt: string;
-}
+import { useColleges, useDeleteCollege } from "@/hooks/useColleges";
+import type { College } from "@/types/api";
 
 const Colleges = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,41 +17,18 @@ const Colleges = () => {
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const { toast } = useToast();
 
-  // Mock data - in real app, fetch from backend
-  const [colleges, setColleges] = useState<College[]>([
-    {
-      id: "1",
-      name: "College of Computing",
-      description: "Leading institution for computer science and information technology education",
-      departments: ["Computer Science", "Information Technology", "Software Engineering", "Data Science"],
-      createdAt: "2024-01-10",
-    },
-    {
-      id: "2",
-      name: "College of Engineering",
-      description: "Premier engineering education with focus on innovation and practical application",
-      departments: ["Civil Engineering", "Mechanical Engineering", "Electrical Engineering", "Chemical Engineering"],
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "3",
-      name: "College of Business",
-      description: "Comprehensive business education preparing future leaders and entrepreneurs",
-      departments: ["Business Administration", "Marketing", "Finance", "Economics"],
-      createdAt: "2024-01-20",
-    },
-  ]);
+  // API hooks
+  const { data: colleges, isLoading, error } = useColleges({ search: searchTerm });
+  const deleteCollege = useDeleteCollege();
 
-  const filteredColleges = colleges.filter(college =>
-    college.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    college.departments.some(dept => dept.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Ensure colleges is always an array and handle loading/error states
+  const filteredColleges = Array.isArray(colleges) ? colleges : [];
 
   const stats = {
-    total: colleges.length,
-    totalDepartments: colleges.reduce((acc, college) => acc + (college.departments?.length || 0), 0),
-    avgDepartments: colleges.length > 0
-      ? Math.round(colleges.reduce((acc, college) => acc + (college.departments?.length || 0), 0) / colleges.length)
+    totalColleges: filteredColleges.length,
+    totalDepartments: filteredColleges.reduce((acc, college) => acc + (college.departments_count || 0), 0),
+    avgDepartmentsPerCollege: filteredColleges.length > 0
+      ? Math.round(filteredColleges.reduce((acc, college) => acc + (college.departments_count || 0), 0) / filteredColleges.length)
       : 0,
   };
 
@@ -74,39 +45,44 @@ const Colleges = () => {
   };
 
   const handleDeleteCollege = (college: College) => {
-    setColleges(colleges.filter(c => c.id !== college.id));
-    toast({
-      title: "College deleted",
-      description: `${college.name} has been removed successfully.`,
+    deleteCollege.mutate(college.id, {
+      onSuccess: () => {
+        toast({
+          title: "College deleted",
+          description: `${college.name} has been removed successfully.`,
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Delete failed",
+          description: error.message || "Failed to delete college",
+          variant: "destructive",
+        });
+      },
     });
   };
 
-  const handleSubmitCollege = (collegeData: College) => {
-    const safeCollegeData = {
-      ...collegeData,
-      departments: collegeData.departments || [],
-    };
-    if (modalMode === "create") {
-      const newCollege = {
-        ...safeCollegeData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString().split('T')[0],
-      };
-      setColleges([...colleges, newCollege]);
-      toast({
-        title: "College created",
-        description: `${collegeData.name} has been added successfully.`,
-      });
-    } else {
-      setColleges(colleges.map(c => 
-        c.id === selectedCollege?.id ? { ...safeCollegeData, id: c.id } : c
-      ));
-      toast({
-        title: "College updated",
-        description: `${collegeData.name} has been updated successfully.`,
-      });
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Loading colleges...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Card className="shadow-elegant">
+          <CardContent className="p-6 text-center">
+            <p className="text-destructive">Failed to load colleges data. Please check your connection to the backend API.</p>
+            <p className="text-sm text-muted-foreground mt-2">Error: {error.message}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -131,7 +107,7 @@ const Colleges = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Colleges</p>
-                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.totalColleges}</p>
               </div>
               <Building2 className="h-8 w-8 text-primary" />
             </div>
@@ -155,7 +131,7 @@ const Colleges = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Avg Departments</p>
-                <p className="text-2xl font-bold text-success">{stats.avgDepartments}</p>
+                <p className="text-2xl font-bold text-success">{stats.avgDepartmentsPerCollege}</p>
               </div>
               <Badge className="bg-success/10 text-success">
                 Per College
@@ -215,20 +191,13 @@ const Colleges = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {(college.departments || []).slice(0, 2).map((dept, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {dept}
-                          </Badge>
-                        ))}
-                        {(college.departments || []).length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{(college.departments || []).length - 2} more
-                          </Badge>
-                        )}
+                        <Badge variant="outline" className="text-xs">
+                          {college.departments_count || 0} departments
+                        </Badge>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {new Date(college.createdAt).toLocaleDateString()}
+                      {college.created_at ? new Date(college.created_at).toLocaleDateString() : 'N/A'}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -270,7 +239,6 @@ const Colleges = () => {
       <CollegeModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSubmit={handleSubmitCollege}
         college={selectedCollege}
         mode={modalMode}
       />
