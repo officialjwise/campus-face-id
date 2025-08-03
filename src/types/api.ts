@@ -50,6 +50,7 @@ export interface College {
   description?: string;
   created_at?: string;
   departments_count?: number;
+  departments?: Department[];
 }
 
 export interface CreateCollegeRequest {
@@ -70,6 +71,7 @@ export interface Department {
   name: string;
   college_id: string;
   description?: string;
+  department_head?: string;
   created_at?: string;
   students_count?: number;
 }
@@ -78,11 +80,13 @@ export interface CreateDepartmentRequest {
   name: string;
   college_id: string;
   description?: string;
+  department_head?: string;
 }
 
 export interface UpdateDepartmentRequest {
   name?: string;
   description?: string;
+  department_head?: string;
 }
 
 // Student Types
@@ -149,6 +153,50 @@ export interface AdminStats {
   total_departments: number;
   recognition_events_today: number;
   admins: number;
+}
+
+// Dashboard Chart Data Types
+export interface RegistrationTrendData {
+  month: string;
+  registrations: number;
+}
+
+export interface CollegeDistributionData {
+  name: string;
+  value: number;
+  students_count: number;
+  color?: string;
+}
+
+export interface DepartmentEnrollmentData {
+  department: string;
+  students: number;
+  college_name?: string;
+}
+
+export interface PerformanceMetric {
+  metric: string;
+  current: number;
+  target: number;
+}
+
+export interface DashboardChartData {
+  registration_trends: RegistrationTrendData[];
+  college_distribution: CollegeDistributionData[];
+  department_enrollment: DepartmentEnrollmentData[];
+  performance_metrics: PerformanceMetric[];
+}
+
+// System Health Metrics Types
+export interface SystemHealthMetrics {
+  api_response_time: number;
+  database_connections: number;
+  memory_usage: number;
+  cpu_usage: number;
+  active_users: number;
+  error_rate: number;
+  uptime: number;
+  last_updated: string;
 }
 
 // Pagination Types
