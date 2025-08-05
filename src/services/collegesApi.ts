@@ -21,7 +21,14 @@ export const collegesApi = {
     if (params?.search) queryParams.append('search', params.search);
     
     const endpoint = `/colleges/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return apiClient.get<College[]>(endpoint);
+    try {
+      const response = await apiClient.get<{data: College[]} | College[]>(endpoint);
+      // Handle both wrapped and direct array responses
+      return Array.isArray(response) ? response : response.data;
+    } catch (error) {
+      console.error('Failed to fetch colleges:', error);
+      throw error;
+    }
   },
 
   // Get college by ID (Admin only)

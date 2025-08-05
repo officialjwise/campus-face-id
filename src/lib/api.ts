@@ -2,6 +2,20 @@ import { clsx, type ClassValue } from "clsx";
 
 export const API_BASE_URL = 'http://localhost:8000';
 
+// Simple connectivity test
+export const testBackendConnection = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/health`, { 
+      method: 'GET',
+      mode: 'cors'
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Backend connection test failed:', error);
+    return false;
+  }
+};
+
 // Token management
 export const getAuthToken = (): string | null => {
   return localStorage.getItem('access_token');
@@ -52,6 +66,11 @@ class ApiClient {
     try {
       const response = await fetch(url, config);
 
+      // Handle CORS errors specifically
+      if (!response.ok && response.type === 'opaque') {
+        throw new Error('CORS Error: Backend server is not configured to allow requests from this origin. Please check your backend CORS settings.');
+      }
+
       // Handle token refresh
       if (response.status === 401 && token) {
         const refreshed = await this.refreshToken();
@@ -77,6 +96,12 @@ class ApiClient {
       return this.handleResponse<T>(response);
     } catch (error) {
       console.error('API request failed:', error);
+      
+      // Handle specific error types
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error('Network Error: Unable to connect to the server. Please check if the backend server is running on http://localhost:8000 and CORS is properly configured.');
+      }
+      
       throw error;
     }
   }
@@ -130,6 +155,18 @@ class ApiClient {
     });
   }
 
+  async postForm<T>(endpoint: string, formData: URLSearchParams): Promise<T> {
+    const token = getAuthToken();
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: formData.toString(),
+    });
+  }
+
   async put<T>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',
@@ -144,6 +181,26 @@ class ApiClient {
   async uploadFile<T>(endpoint: string, file: File, additionalData?: Record<string, string>): Promise<T> {
     const formData = new FormData();
     formData.append('file', file);
+    
+    if (additionalData) {
+      Object.entries(additionalData).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+    }
+
+    const token = getAuthToken();
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: formData,
+    });
+  }
+
+  async uploadStudentWithPhoto<T>(endpoint: string, file: File, additionalData?: Record<string, string>): Promise<T> {
+    const formData = new FormData();
+    formData.append('face_image', file); // Use 'face_image' field name for student photos
     
     if (additionalData) {
       Object.entries(additionalData).forEach(([key, value]) => {

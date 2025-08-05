@@ -113,9 +113,12 @@ export interface CreateStudentRequest {
   college_id: string;
   department_id: string;
   student_id?: string;
+  index_number?: string;
+  middle_name?: string;
   phone?: string;
   date_of_birth?: string;
   address?: string;
+  photo?: Blob | File;
 }
 
 export interface UpdateStudentRequest {
@@ -218,4 +221,133 @@ export interface PaginatedResponse<T> {
 export interface HealthCheck {
   status: string;
   timestamp: string;
+}
+
+// Room Assignment Types
+export interface RoomAssignment {
+  id: string;
+  room_code: string;
+  room_name: string;
+  index_start: number;
+  index_end: number;
+  capacity: number;
+  description?: string;
+  assigned_students_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateRoomAssignmentRequest {
+  room_code: string;
+  room_name: string;
+  index_start: string | number;
+  index_end: string | number;
+  capacity: number;
+  description?: string;
+}
+
+export interface UpdateRoomAssignmentRequest {
+  room_code?: string;
+  room_name?: string;
+  index_start?: string | number;
+  index_end?: string | number;
+  capacity?: number;
+  description?: string;
+}
+
+// Room Preview Types
+export interface RoomPreviewRequest {
+  index_start: string | number;
+  index_end: string | number;
+}
+
+export interface RoomPreviewResponse {
+  index_start: string;
+  index_end: string;
+  total_students: number;
+  students_preview: StudentPreview[];
+  has_more: boolean;
+}
+
+export interface StudentPreview {
+  name: string;
+  index_number: string;
+  email: string;
+  college: string;
+}
+
+// Room Validation Types
+export interface RoomRecognitionRequest {
+  room_code: string;
+  face_image: string; // base64 encoded image
+}
+
+export interface RoomValidationResponse {
+  status: 'valid' | 'invalid' | 'not_found';
+  message: string;
+  beep_type: 'confirmation' | 'warning' | 'error';
+  student_name?: string;
+  index_number?: string;
+  room_code?: string;
+  room_name?: string;
+  student?: Student;
+  room_assignment?: RoomAssignment;
+  confidence?: number;
+  timestamp: string;
+}
+
+// Quick Validation Types
+export interface QuickValidationResponse {
+  valid: boolean;
+  message: string;
+  student?: Student;
+  room_assignment?: RoomAssignment;
+  index_number: string;
+  room_code: string;
+}
+
+// Room Status Types
+export interface RoomStatus {
+  room_code: string;
+  room_name: string;
+  index_start: number;
+  index_end: number;
+  capacity: number;
+  assigned_students_count: number;
+  current_occupancy?: number;
+  status: 'active' | 'inactive' | 'full';
+  validation_count?: number;
+  rejection_count?: number;
+  last_activity?: string;
+  utilization_percentage?: number;
+}
+
+// Room Details with Students
+export interface RoomDetails extends RoomAssignment {
+  students: Student[];
+  total_students: number;
+  utilization_percentage: number;
+}
+
+// Recognition Log Types
+export interface RecognitionLog {
+  id: string;
+  student_id?: string;
+  room_code: string;
+  validation_status: 'valid' | 'invalid' | 'not_found';
+  confidence?: number;
+  timestamp: string;
+  student?: Student;
+  room_assignment?: RoomAssignment;
+  index_number?: string;
+  message?: string;
+  beep_type?: 'confirmation' | 'warning' | 'error';
+}
+
+// Audio feedback type
+export interface AudioFeedback {
+  success: HTMLAudioElement;
+  warning: HTMLAudioElement;
+  playSuccess: () => void;
+  playWarning: () => void;
 }

@@ -11,6 +11,7 @@ import {
   BookOpen,
   ChevronDown,
   Menu,
+  Shield,
 } from "lucide-react";
 import {
   Sidebar,
@@ -26,39 +27,9 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-const menuItems = [
-  {
-    title: "Dashboard",
-    url: "/admin",
-    icon: LayoutDashboard,
-    badge: null,
-  },
-  {
-    title: "Student Management",
-    url: "/admin/students",
-    icon: Users,
-    badge: "124",
-  },
-  {
-    title: "Colleges",
-    url: "/admin/colleges",
-    icon: Building2,
-    badge: "3",
-  },
-  {
-    title: "Departments",
-    url: "/admin/departments",
-    icon: BookOpen,
-    badge: "8",
-  },
-  {
-    title: "Reports",
-    url: "/admin/reports",
-    icon: FileText,
-    badge: null,
-  },
-];
+import { useStudents } from "@/hooks/useStudents";
+import { useColleges } from "@/hooks/useColleges";
+import { useDepartments } from "@/hooks/useDepartments";
 
 const settingsItems = [
   {
@@ -72,6 +43,26 @@ export function AdminSidebar() {
   const { open, setOpen } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+
+  // Fetch data for badges
+  const { data: studentsResponse } = useStudents();
+  const { data: colleges } = useColleges();
+  const { data: departments } = useDepartments();
+
+  // Calculate counts
+  const studentsCount = studentsResponse?.items?.length || 0;
+  const collegesCount = colleges?.length || 0;
+  const departmentsCount = departments?.length || 0;
+
+  // Debug logging
+  console.log('Sidebar counts:', {
+    studentsCount,
+    collegesCount,
+    departmentsCount,
+    studentsResponse,
+    colleges,
+    departments
+  });
 
   // Collapsible state for submenus
   const [openColleges, setOpenColleges] = useState(false);
@@ -142,7 +133,11 @@ export function AdminSidebar() {
               <NavLink to="/admin/students" className={getNavClass("/admin/students")}> 
                 <Users className={`w-4 h-4 flex-shrink-0 ${open ? "mr-2" : "mx-auto"}`} />
                 {open && <span className="flex-1 text-sm">Student Management</span>}
-                {open && <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs px-1.5 py-0.5">124</Badge>}
+                {open && studentsCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs px-1.5 py-0.5">
+                    {studentsCount}
+                  </Badge>
+                )}
               </NavLink>
             </li>
             
@@ -151,7 +146,11 @@ export function AdminSidebar() {
               <NavLink to="/admin/colleges" className={getNavClass("/admin/colleges")}> 
                 <Building2 className={`w-4 h-4 flex-shrink-0 ${open ? "mr-2" : "mx-auto"}`} />
                 {open && <span className="flex-1 text-sm">Colleges</span>}
-                {open && <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs px-1.5 py-0.5">3</Badge>}
+                {open && collegesCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs px-1.5 py-0.5">
+                    {collegesCount}
+                  </Badge>
+                )}
               </NavLink>
             </li>
             
@@ -160,7 +159,19 @@ export function AdminSidebar() {
               <NavLink to="/admin/departments" className={getNavClass("/admin/departments")}> 
                 <BookOpen className={`w-4 h-4 flex-shrink-0 ${open ? "mr-2" : "mx-auto"}`} />
                 {open && <span className="flex-1 text-sm">Departments</span>}
-                {open && <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs px-1.5 py-0.5">8</Badge>}
+                {open && departmentsCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary text-xs px-1.5 py-0.5">
+                    {departmentsCount}
+                  </Badge>
+                )}
+              </NavLink>
+            </li>
+            
+            {/* Room Management */}
+            <li>
+              <NavLink to="/admin/rooms" className={getNavClass("/admin/rooms")}> 
+                <Shield className={`w-4 h-4 flex-shrink-0 ${open ? "mr-2" : "mx-auto"}`} />
+                {open && <span className="flex-1 text-sm">Room Management</span>}
               </NavLink>
             </li>
             

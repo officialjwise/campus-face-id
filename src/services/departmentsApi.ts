@@ -21,13 +21,27 @@ export const departmentsApi = {
     if (params?.search) queryParams.append('search', params.search);
     if (params?.college_id) queryParams.append('college_id', params.college_id);
     
-    const endpoint = `/departments/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return apiClient.get<Department[]>(endpoint);
+    const endpoint = `/departments/?${queryParams.toString()}`;
+    try {
+      const response = await apiClient.get<{data: Department[]} | Department[]>(endpoint);
+      // Handle both wrapped and direct array responses
+      return Array.isArray(response) ? response : response.data;
+    } catch (error) {
+      console.error('Failed to fetch departments:', error);
+      throw error;
+    }
   },
 
   // Get departments by college ID
   getByCollegeId: async (collegeId: string): Promise<Department[]> => {
-    return apiClient.get<Department[]>(`/departments/college/${collegeId}`);
+    try {
+      const response = await apiClient.get<{data: Department[]} | Department[]>(`/departments/?college_id=${collegeId}`);
+      // Handle both wrapped and direct array responses
+      return Array.isArray(response) ? response : response.data;
+    } catch (error) {
+      console.error('Failed to fetch departments by college ID:', error);
+      throw error;
+    }
   },
 
   // Get department by ID (Admin only)

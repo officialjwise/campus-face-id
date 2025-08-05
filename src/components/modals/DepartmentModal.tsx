@@ -26,25 +26,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { colleges } from "@/data/colleges";
+import { useColleges } from "@/hooks/useColleges";
+import type { Department } from "@/types/api";
 
 const departmentSchema = z.object({
   name: z.string().min(2, "Department name must be at least 2 characters"),
-  college: z.string().min(1, "College is required"),
+  college_id: z.string().min(1, "College is required"),
   description: z.string().optional(),
-  head: z.string().optional(),
+  department_head: z.string().optional(),
 });
 
 type DepartmentFormData = z.infer<typeof departmentSchema>;
-
-interface Department {
-  id?: string;
-  name: string;
-  college: string;
-  description?: string;
-  head?: string;
-  createdAt?: string;
-}
 
 interface DepartmentModalProps {
   isOpen: boolean;
@@ -55,13 +47,15 @@ interface DepartmentModalProps {
 }
 
 export function DepartmentModal({ isOpen, onClose, onSubmit, department, mode }: DepartmentModalProps) {
+  const { data: colleges } = useColleges();
+  
   const form = useForm<DepartmentFormData>({
     resolver: zodResolver(departmentSchema),
     defaultValues: {
       name: "",
-      college: "",
+      college_id: "",
       description: "",
-      head: "",
+      department_head: "",
     },
   });
 
@@ -71,16 +65,16 @@ export function DepartmentModal({ isOpen, onClose, onSubmit, department, mode }:
     if (department && mode === "edit") {
       reset({
         name: department.name,
-        college: department.college,
+        college_id: department.college_id,
         description: department.description || "",
-        head: department.head || "",
+        department_head: department.department_head || "",
       });
     } else {
       reset({
         name: "",
-        college: "",
+        college_id: "",
         description: "",
-        head: "",
+        department_head: "",
       });
     }
   }, [department, mode, reset]);
@@ -88,11 +82,11 @@ export function DepartmentModal({ isOpen, onClose, onSubmit, department, mode }:
   const handleSubmit = (data: DepartmentFormData) => {
     const departmentData: Department = {
       name: data.name,
-      college: data.college,
+      college_id: data.college_id,
       description: data.description,
-      head: data.head,
+      department_head: data.department_head,
       id: department?.id,
-      createdAt: department?.createdAt || new Date().toISOString().split('T')[0],
+      created_at: department?.created_at || new Date().toISOString(),
     };
     onSubmit(departmentData);
     onClose();
@@ -126,7 +120,7 @@ export function DepartmentModal({ isOpen, onClose, onSubmit, department, mode }:
 
               <FormField
                 control={form.control}
-                name="college"
+                name="college_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>College</FormLabel>
@@ -137,11 +131,11 @@ export function DepartmentModal({ isOpen, onClose, onSubmit, department, mode }:
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {colleges.map((college) => (
-                          <SelectItem key={college.name} value={college.name}>
+                        {colleges?.map((college) => (
+                          <SelectItem key={college.id} value={college.id}>
                             {college.name}
                           </SelectItem>
-                        ))}
+                        )) || []}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -152,7 +146,7 @@ export function DepartmentModal({ isOpen, onClose, onSubmit, department, mode }:
 
             <FormField
               control={form.control}
-              name="head"
+              name="department_head"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Department Head (Optional)</FormLabel>

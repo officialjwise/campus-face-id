@@ -12,7 +12,24 @@ import type {
 export const studentsApi = {
   // Register new student (Public)
   register: async (data: CreateStudentRequest): Promise<Student> => {
-    return apiClient.post<Student>('/students/', data);
+    // If photo is included, use uploadStudentWithPhoto for multipart upload
+    if (data.photo) {
+      const { photo, ...additionalData } = data;
+      
+      // Convert all data to strings for additionalData
+      const stringData: Record<string, string> = {};
+      Object.entries(additionalData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          stringData[key] = value.toString();
+        }
+      });
+      
+      return apiClient.uploadStudentWithPhoto<Student>('/students/', photo as File, stringData);
+    } else {
+      // Regular JSON request without photo
+      const { photo, ...jsonData } = data;
+      return apiClient.post<Student>('/students/', jsonData);
+    }
   },
 
   // Get all students (Admin only)
@@ -26,6 +43,7 @@ export const studentsApi = {
     if (params?.search) queryParams.append('search', params.search);
     if (params?.college_id) queryParams.append('college_id', params.college_id);
     if (params?.department_id) queryParams.append('department_id', params.department_id);
+
     
     const endpoint = `/students/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return apiClient.get<PaginatedResponse<Student>>(endpoint);

@@ -80,7 +80,10 @@ export default function Login() {
       });
     } else {
       // Use OTP-based login (recommended)
-      requestLoginOTP.mutate({ email: data.email }, {
+      requestLoginOTP.mutate({ 
+        email: data.email, 
+        password: data.password 
+      }, {
         onSuccess: (response) => {
           setShowOTP(true);
           toast({

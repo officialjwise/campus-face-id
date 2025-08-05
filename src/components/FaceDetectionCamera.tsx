@@ -21,6 +21,7 @@ export default function FaceDetectionCamera({
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>("");
   const [capturedImage, setCapturedImage] = useState<string>("");
+  const [isImageConfirmed, setIsImageConfirmed] = useState<boolean>(false);
   const [faceDetections, setFaceDetections] = useState<FaceDetectionResult[]>([]);
   const [isDetecting, setIsDetecting] = useState(false);
   const [faceDetected, setFaceDetected] = useState(false);
@@ -150,7 +151,8 @@ export default function FaceDetectionCamera({
         if (blob) {
           console.log('Confirming capture with blob size:', blob.size);
           await onCapture(blob, faceDetected);
-          setCapturedImage(""); // Clear the preview after successful capture
+          setIsImageConfirmed(true);
+          stopCamera(); // Stop camera after confirming capture
         } else {
           console.error('Failed to create blob from canvas');
         }
@@ -158,19 +160,41 @@ export default function FaceDetectionCamera({
         console.error('Error in confirmCapture:', error);
       }
     }
-  }, [onCapture, faceDetected, capturedImage]);
+  }, [onCapture, faceDetected, capturedImage, stopCamera]);
 
   const retakePhoto = useCallback(() => {
     setCapturedImage("");
-  }, []);
+    setIsImageConfirmed(false);
+    // Restart camera for retaking
+    if (!stream) {
+      startCamera();
+    }
+  }, [stream, startCamera]);
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      onCapture(file, false); // File uploads can't detect faces in real-time
+      // Create a preview of the uploaded file
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setCapturedImage(e.target.result as string);
+          stopCamera(); // Stop camera when file is uploaded
+          
+          // Auto-confirm the uploaded file
+          const confirmUpload = async () => {
+            await onCapture(file, false); // File uploads can't detect faces in real-time
+            setIsImageConfirmed(true);
+          };
+          
+          // Auto-confirm after setting the preview
+          setTimeout(confirmUpload, 100);
+        }
+      };
+      reader.readAsDataURL(file);
     }
     event.target.value = '';
-  }, [onCapture]);
+  }, [onCapture, stopCamera]);
 
   useEffect(() => {
     return () => {
@@ -221,7 +245,7 @@ export default function FaceDetectionCamera({
         <div className="space-y-4">
           <div className="relative">
             {capturedImage ? (
-              // Show captured image preview
+              // Show captured/uploaded image preview
               <div className="relative">
                 <img 
                   src={capturedImage} 
@@ -231,35 +255,37 @@ export default function FaceDetectionCamera({
                   onLoad={() => console.log('Captured image loaded successfully')}
                   onError={(e) => console.error('Failed to load captured image:', e)}
                 />
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                  <Button 
-                    onClick={retakePhoto}
-                    variant="outline"
-                    size="lg"
-                    className="rounded-full h-12 w-12 p-0"
-                    title="Retake Photo"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                  <Button 
-                    onClick={confirmCapture}
-                    disabled={isCapturing}
-                    size="lg"
-                    className="rounded-full h-12 w-12 p-0 bg-primary hover:bg-primary/90"
-                    title="Confirm and Submit"
-                  >
-                    {isCapturing ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <Check className="h-5 w-5" />
-                    )}
-                  </Button>
-                </div>
-                {requireFaceDetection && modelsLoaded && !faceDetected && (
-                  <div className="absolute top-4 left-4 right-4">
-                    <Badge variant="secondary" className="w-full justify-center">
-                      <AlertCircle className="h-4 w-4 mr-1" />
-                      No face detected - capture is still allowed
+                {!isImageConfirmed && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                    <Button 
+                      onClick={retakePhoto}
+                      variant="outline"
+                      size="lg"
+                      className="rounded-full h-12 w-12 p-0"
+                      title="Retake Photo"
+                    >
+                      <X className="h-5 w-5" />
+                    </Button>
+                    <Button 
+                      onClick={confirmCapture}
+                      disabled={isCapturing}
+                      size="lg"
+                      className="rounded-full h-12 w-12 p-0 bg-primary hover:bg-primary/90"
+                      title="Confirm and Submit"
+                    >
+                      {isCapturing ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Check className="h-5 w-5" />
+                      )}
+                    </Button>
+                  </div>
+                )}
+                {isImageConfirmed && (
+                  <div className="absolute top-4 right-4">
+                    <Badge variant="default" className="bg-green-600">
+                      <Check className="h-4 w-4 mr-1" />
+                      Photo Confirmed
                     </Badge>
                   </div>
                 )}
@@ -383,7 +409,7 @@ export default function FaceDetectionCamera({
             </div>
           )}
 
-          {capturedImage && (
+          {capturedImage && !isImageConfirmed && (
             <div className="text-center space-y-2">
               <p className="text-sm text-muted-foreground">
                 Photo captured successfully! Click the checkmark to confirm and submit, or X to retake.
@@ -396,6 +422,22 @@ export default function FaceDetectionCamera({
                   Submitting photo...
                 </p>
               )}
+            </div>
+          )}
+
+          {isImageConfirmed && (
+            <div className="text-center space-y-2">
+              <p className="text-sm text-green-600 font-medium">
+                ✓ Your photo has been captured and will be included in the registration.
+              </p>
+              <Button 
+                onClick={retakePhoto}
+                variant="outline"
+                size="sm"
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                Take New Photo
+              </Button>
             </div>
           )}
 

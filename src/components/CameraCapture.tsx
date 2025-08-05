@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,11 +9,16 @@ interface CameraCaptureProps {
   isCapturing: boolean;
 }
 
-export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureProps) {
+export interface CameraCaptureRef {
+  reset: () => void;
+}
+
+const CameraCapture = forwardRef<CameraCaptureRef, CameraCaptureProps>(({ onCapture, isCapturing }, ref) => {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>("");
   const [capturedImage, setCapturedImage] = useState<string>("");
+  const [isImageConfirmed, setIsImageConfirmed] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -73,23 +78,58 @@ export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureP
       canvasRef.current.toBlob((blob) => {
         if (blob) {
           onCapture(blob);
-          setCapturedImage("");
+          setIsImageConfirmed(true);
+          stopCamera(); // Stop camera after confirming capture
         }
       }, "image/jpeg", 0.8);
     }
-  }, [onCapture]);
+  }, [onCapture, stopCamera]);
 
   const retakePhoto = useCallback(() => {
     setCapturedImage("");
-  }, []);
+    setIsImageConfirmed(false);
+    // Restart camera for retaking
+    if (!stream) {
+      startCamera();
+    }
+  }, [stream, startCamera]);
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      onCapture(file);
+      // Create a preview of the uploaded file
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setCapturedImage(e.target.result as string);
+          stopCamera(); // Stop camera when file is uploaded
+          
+          // Store the file for later confirmation
+          const confirmUpload = () => {
+            onCapture(file);
+            setIsImageConfirmed(true);
+          };
+          
+          // Auto-confirm after setting the preview
+          setTimeout(confirmUpload, 100);
+        }
+      };
+      reader.readAsDataURL(file);
     }
     event.target.value = '';
-  }, [onCapture]);
+  }, [onCapture, stopCamera]);
+
+  const resetCamera = useCallback(() => {
+    setCapturedImage("");
+    setIsImageConfirmed(false);
+    stopCamera();
+    setHasPermission(null);
+    setError("");
+  }, [stopCamera]);
+
+  useImperativeHandle(ref, () => ({
+    reset: resetCamera
+  }), [resetCamera]);
 
   useEffect(() => {
     return () => {
@@ -137,7 +177,7 @@ export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureP
         <div className="space-y-4">
           <div className="relative">
             {capturedImage ? (
-              // Show captured image preview
+              // Show captured/uploaded image preview
               <div className="relative">
                 <img 
                   src={capturedImage} 
@@ -145,24 +185,34 @@ export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureP
                   className="w-full rounded-lg bg-muted"
                   style={{ maxHeight: '400px', objectFit: 'cover' }}
                 />
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                  <Button 
-                    onClick={retakePhoto}
-                    variant="outline"
-                    size="lg"
-                    className="rounded-full h-12 w-12 p-0"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                  <Button 
-                    onClick={confirmCapture}
-                    disabled={isCapturing}
-                    size="lg"
-                    className="rounded-full h-12 w-12 p-0 bg-primary"
-                  >
-                    <Check className="h-5 w-5" />
-                  </Button>
-                </div>
+                {!isImageConfirmed && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                    <Button 
+                      onClick={retakePhoto}
+                      variant="outline"
+                      size="lg"
+                      className="rounded-full h-12 w-12 p-0"
+                    >
+                      <X className="h-5 w-5" />
+                    </Button>
+                    <Button 
+                      onClick={confirmCapture}
+                      disabled={isCapturing}
+                      size="lg"
+                      className="rounded-full h-12 w-12 p-0 bg-primary"
+                    >
+                      <Check className="h-5 w-5" />
+                    </Button>
+                  </div>
+                )}
+                {isImageConfirmed && (
+                  <div className="absolute top-4 right-4">
+                    <Badge variant="default" className="bg-green-600">
+                      <Check className="h-4 w-4 mr-1" />
+                      Photo Confirmed
+                    </Badge>
+                  </div>
+                )}
               </div>
             ) : (
               // Show live camera feed
@@ -228,15 +278,34 @@ export default function CameraCapture({ onCapture, isCapturing }: CameraCaptureP
             </div>
           )}
 
-          {capturedImage && (
+          {capturedImage && !isImageConfirmed && (
             <div className="text-center space-y-2">
               <p className="text-sm text-muted-foreground">
                 Photo captured! Click the checkmark to confirm or X to retake.
               </p>
             </div>
           )}
+
+          {isImageConfirmed && (
+            <div className="text-center space-y-2">
+              <p className="text-sm text-green-600 font-medium">
+                ✓ Your photo has been captured and will be included in the registration.
+              </p>
+              <Button 
+                onClick={retakePhoto}
+                variant="outline"
+                size="sm"
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                Take New Photo
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
   );
-}
+});
+
+CameraCapture.displayName = "CameraCapture";
+export default CameraCapture;

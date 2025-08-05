@@ -20,7 +20,7 @@ export const authApi = {
   },
 
   // Request login OTP (recommended)
-  requestLoginOTP: async (data: EmailRequest): Promise<OTPResponse> => {
+  requestLoginOTP: async (data: LoginRequest): Promise<OTPResponse> => {
     return apiClient.post<OTPResponse>('/auth/login-otp', data);
   },
 
@@ -31,7 +31,12 @@ export const authApi = {
 
   // Legacy direct login (not recommended)
   login: async (data: LoginRequest): Promise<AuthResponse> => {
-    return apiClient.post<AuthResponse>('/auth/login', data);
+    // Convert to form data as backend expects form data with username field
+    const formData = new URLSearchParams();
+    formData.append('username', data.email);
+    formData.append('password', data.password);
+    
+    return apiClient.postForm<AuthResponse>('/auth/login', formData);
   },
 
   // Refresh access token

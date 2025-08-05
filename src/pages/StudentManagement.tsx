@@ -8,22 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Settings, Users, Search, Plus, Edit, Trash2, Download, Building2 } from "lucide-react";
 import { StudentModal } from "@/components/modals/StudentModal";
 import { useToast } from "@/hooks/use-toast";
-
-interface Student {
-  id: string;
-  studentId: string;
-  indexNumber: string;
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  fullName: string;
-  college: string;
-  department: string;
-  email: string;
-  profileImage?: string;
-  registrationDate: string;
-  status: "active" | "inactive";
-}
+import { useStudents, useDeleteStudent } from "@/hooks/useStudents";
+import type { Student } from "@/types/api";
 
 const StudentManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,67 +19,11 @@ const StudentManagement = () => {
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const { toast } = useToast();
 
-  // Mock data - in real app, fetch from backend
-  const [students, setStudents] = useState<Student[]>([
-    {
-      id: "1",
-      studentId: "STU12345",
-      indexNumber: "IND2401",
-      firstName: "John",
-      middleName: "Michael",
-      lastName: "Doe",
-      fullName: "John Michael Doe",
-      college: "College of Computing",
-      department: "Computer Science",
-      email: "john.doe@university.edu",
-      profileImage: "https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?w=400",
-      registrationDate: "2024-01-15",
-      status: "active",
-    },
-    {
-      id: "2",
-      studentId: "STU67890",
-      indexNumber: "IND2402",
-      firstName: "Jane",
-      lastName: "Smith",
-      fullName: "Jane Smith",
-      college: "College of Computing",
-      department: "Information Technology",
-      email: "jane.smith@university.edu",
-      profileImage: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400",
-      registrationDate: "2024-01-16",
-      status: "active",
-    },
-    {
-      id: "3",
-      studentId: "STU11111",
-      indexNumber: "IND2403",
-      firstName: "Mike",
-      lastName: "Johnson",
-      fullName: "Mike Johnson",
-      college: "College of Engineering",
-      department: "Civil Engineering",
-      email: "mike.johnson@university.edu",
-      profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
-      registrationDate: "2024-01-17",
-      status: "inactive",
-    },
-    {
-      id: "4",
-      studentId: "STU22222",
-      indexNumber: "IND2404",
-      firstName: "Sarah",
-      middleName: "Elizabeth",
-      lastName: "Wilson",
-      fullName: "Sarah Elizabeth Wilson",
-      college: "College of Business",
-      department: "Business Administration",
-      email: "sarah.wilson@university.edu",
-      profileImage: "https://images.unsplash.com/photo-1494790108755-2616b6f6d16b?w=400",
-      registrationDate: "2024-01-18",
-      status: "active",
-    },
-  ]);
+  // Fetch students from API
+  const { data: studentsResponse, isLoading, error, refetch } = useStudents();
+  const deleteStudentMutation = useDeleteStudent();
+
+  const students = studentsResponse?.items || [];
 
   const departments = ["all", "Computer Science", "Information Technology", "Civil Engineering", "Business Administration"];
 
@@ -109,52 +39,58 @@ const StudentManagement = () => {
     setModalOpen(true);
   };
 
-  const handleDeleteStudent = (student: Student) => {
-    setStudents(students.filter(s => s.id !== student.id));
-    toast({
-      title: "Student deleted",
-      description: `${student.fullName} has been removed successfully.`,
-    });
+  const handleDeleteStudent = async (student: Student) => {
+    try {
+      await deleteStudentMutation.mutateAsync(student.id);
+      refetch(); // Refetch the students list
+      toast({
+        title: "Student Deleted",
+        description: `${student.first_name} ${student.last_name} has been removed successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete student. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSubmitStudent = (studentData: Student) => {
     if (modalMode === "create") {
-      const newStudent = {
-        ...studentData,
-        id: Date.now().toString(),
-        registrationDate: new Date().toISOString().split('T')[0],
-        status: "active" as const,
-      };
-      setStudents([...students, newStudent]);
+      // This would typically call a create API
+      refetch();
       toast({
         title: "Student created",
-        description: `${studentData.fullName} has been added successfully.`,
+        description: `${studentData.first_name} ${studentData.last_name} has been added successfully.`,
       });
     } else {
-      setStudents(students.map(s => 
-        s.id === selectedStudent?.id ? { ...studentData, id: s.id } : s
-      ));
+      // This would typically call an update API
+      refetch();
       toast({
-        title: "Student updated",
-        description: `${studentData.fullName} has been updated successfully.`,
+        title: "Student updated", 
+        description: `${studentData.first_name} ${studentData.last_name} has been updated successfully.`,
       });
     }
   };
 
   const filteredStudents = students.filter(student => {
-    const matchesSearch = student.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const fullName = `${student.first_name} ${student.last_name}`.toLowerCase();
+    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
+                         (student.student_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          student.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = selectedDepartment === "all" || student.department === selectedDepartment;
+    const matchesDepartment = selectedDepartment === "all" || 
+                             (student.department && student.department.name === selectedDepartment);
     return matchesSearch && matchesDepartment;
   });
 
   const stats = {
     total: students.length,
-    active: students.filter(s => s.status === "active").length,
-    inactive: students.filter(s => s.status === "inactive").length,
+    active: students.length, // All students are considered active since we don't have a status field
+    inactive: 0, // No inactive students
     recentRegistrations: students.filter(s => {
-      const regDate = new Date(s.registrationDate);
+      if (!s.created_at) return false;
+      const regDate = new Date(s.created_at);
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       return regDate >= weekAgo;
@@ -163,7 +99,29 @@ const StudentManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {isLoading && (
+        <div className="flex items-center justify-center py-8">
+          <p>Loading students...</p>
+        </div>
+      )}
+      
+      {error && (
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded">
+          <p>Error loading students: {error instanceof Error ? error.message : 'Unknown error'}</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()}
+            className="mt-2"
+          >
+            Retry
+          </Button>
+        </div>
+      )}
+
+      {!isLoading && !error && (
+        <>
+          <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Student Management</h1>
           <p className="text-muted-foreground">Manage student registrations and data</p>
@@ -298,38 +256,34 @@ const StudentManagement = () => {
                     <TableCell>
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={student.profileImage} />
                           <AvatarFallback className="bg-primary/10 text-primary">
-                            {student.fullName.split(' ').map(n => n[0]).join('')}
+                            {student.first_name[0]}{student.last_name[0]}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">{student.fullName}</p>
-                          <p className="text-sm text-muted-foreground">{student.indexNumber}</p>
+                          <p className="font-medium">{student.first_name} {student.last_name}</p>
+                          <p className="text-sm text-muted-foreground">{student.student_id || 'N/A'}</p>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">{student.studentId}</TableCell>
+                    <TableCell className="font-medium">{student.student_id || 'N/A'}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{student.college}</span>
+                        <span className="text-sm">{student.college?.name || 'N/A'}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{student.department}</Badge>
+                      <Badge variant="outline">{student.department?.name || 'N/A'}</Badge>
                     </TableCell>
                     <TableCell>{student.email}</TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={student.status === "active" ? "default" : "destructive"}
-                        className={student.status === "active" ? "bg-success/10 text-success" : ""}
-                      >
-                        {student.status}
+                      <Badge variant="default" className="bg-success/10 text-success">
+                        Active
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {new Date(student.registrationDate).toLocaleDateString()}
+                      {student.created_at ? new Date(student.created_at).toLocaleDateString() : 'N/A'}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -368,6 +322,7 @@ const StudentManagement = () => {
         </CardContent>
       </Card>
 
+      {/* TODO: Fix StudentModal to work with API Student type
       <StudentModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -375,6 +330,9 @@ const StudentManagement = () => {
         student={selectedStudent}
         mode={modalMode}
       />
+      */}
+      </>
+      )}
     </div>
   );
 };

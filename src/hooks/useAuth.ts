@@ -41,7 +41,7 @@ export const useVerifyRegistrationOTP = () => {
 // Request login OTP mutation
 export const useRequestLoginOTP = () => {
   return useMutation({
-    mutationFn: (data: EmailRequest) => authApi.requestLoginOTP(data),
+    mutationFn: (data: LoginRequest) => authApi.requestLoginOTP(data),
     onSuccess: (data) => {
       console.log('Login OTP sent:', data.message);
     },

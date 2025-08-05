@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
-import { GraduationCap, UserPlus, Scan, Settings, Sun, Moon } from "lucide-react";
+import { GraduationCap, UserPlus, Scan, Settings, Sun, Moon, Shield, Activity, Search } from "lucide-react";
 
 const Navigation = () => {
   const location = useLocation();
@@ -11,6 +11,9 @@ const Navigation = () => {
     { to: "/", label: "Home", icon: GraduationCap },
     { to: "/register", label: "Register", icon: UserPlus },
     { to: "/recognition", label: "Recognition", icon: Scan },
+    { to: "/exam-hall", label: "Exam Hall", icon: Shield },
+    { to: "/room-status", label: "Room Status", icon: Activity },
+    { to: "/index-lookup", label: "Index Lookup", icon: Search },
     { to: "/contact", label: "Contact", icon: Settings },
   ];
 

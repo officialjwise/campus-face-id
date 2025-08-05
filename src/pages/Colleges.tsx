@@ -8,6 +8,7 @@ import { Building2, Search, Plus, Edit, Trash2, BookOpen, Loader2 } from "lucide
 import { CollegeModal } from "@/components/modals/CollegeModal";
 import { useToast } from "@/hooks/use-toast";
 import { useColleges, useDeleteCollege } from "@/hooks/useColleges";
+import { useDepartments } from "@/hooks/useDepartments";
 import type { College } from "@/types/api";
 
 const Colleges = () => {
@@ -18,17 +19,40 @@ const Colleges = () => {
   const { toast } = useToast();
 
   // API hooks
-  const { data: colleges, isLoading, error } = useColleges({ search: searchTerm });
+  const { data: colleges, isLoading, error } = useColleges();
+  const { data: departments, isLoading: departmentsLoading } = useDepartments();
   const deleteCollege = useDeleteCollege();
 
   // Ensure colleges is always an array and handle loading/error states
   const filteredColleges = Array.isArray(colleges) ? colleges : [];
+  const departmentsList = departments || [];
+
+  // Associate departments with colleges
+  const collegesWithDepartments = filteredColleges.map(college => ({
+    ...college,
+    departments: departmentsList.filter(dept => dept.college_id === college.id),
+    departments_count: departmentsList.filter(dept => dept.college_id === college.id).length
+  }));
+
+  // Additional client-side filtering for department names
+  const finalFilteredColleges = collegesWithDepartments.filter(college => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    const matchesCollegeName = college.name.toLowerCase().includes(searchLower);
+    const matchesDescription = college.description?.toLowerCase().includes(searchLower);
+    const matchesDepartments = college.departments?.some(dept => 
+      dept.name.toLowerCase().includes(searchLower)
+    );
+    
+    return matchesCollegeName || matchesDescription || matchesDepartments;
+  });
 
   const stats = {
-    totalColleges: filteredColleges.length,
-    totalDepartments: filteredColleges.reduce((acc, college) => acc + (college.departments_count || 0), 0),
-    avgDepartmentsPerCollege: filteredColleges.length > 0
-      ? Math.round(filteredColleges.reduce((acc, college) => acc + (college.departments_count || 0), 0) / filteredColleges.length)
+    totalColleges: finalFilteredColleges.length,
+    totalDepartments: finalFilteredColleges.reduce((acc, college) => acc + (college.departments_count || 0), 0),
+    avgDepartmentsPerCollege: finalFilteredColleges.length > 0
+      ? Math.round(finalFilteredColleges.reduce((acc, college) => acc + (college.departments_count || 0), 0) / finalFilteredColleges.length)
       : 0,
   };
 
@@ -62,11 +86,11 @@ const Colleges = () => {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || departmentsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">Loading colleges...</span>
+        <span className="ml-2 text-muted-foreground">Loading colleges and departments...</span>
       </div>
     );
   }
@@ -183,17 +207,25 @@ const Colleges = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredColleges.map((college) => (
+                {finalFilteredColleges.map((college) => (
                   <TableRow key={college.id}>
                     <TableCell className="font-medium">{college.name}</TableCell>
                     <TableCell className="max-w-md">
                       <p className="truncate">{college.description || "No description"}</p>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        <Badge variant="outline" className="text-xs">
-                          {college.departments_count || 0} departments
-                        </Badge>
+                      <div className="flex flex-wrap gap-1 max-w-xs">
+                        {college.departments && college.departments.length > 0 ? (
+                          college.departments.map((dept) => (
+                            <Badge key={dept.id} variant="outline" className="text-xs">
+                              {dept.name}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            No departments
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>

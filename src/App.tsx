@@ -18,6 +18,11 @@ import Colleges from "./pages/Colleges";
 import Departments from "./pages/Departments";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import RoomManagement from "./pages/RoomManagement";
+import ExamHall from "./pages/ExamHall";
+import RoomStatus from "./pages/RoomStatus";
+import IndexLookup from "./pages/IndexLookup";
+import ApiTest from "./pages/ApiTest";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -56,6 +61,38 @@ const App = () => (
               </div>
             } />
             
+            {/* Exam Hall Route - Public access for students */}
+            <Route path="/exam-hall" element={
+              <div className="min-h-screen bg-background">
+                <Navigation />
+                <ExamHall />
+              </div>
+            } />
+            
+            {/* Room Status Board - Public access for monitoring */}
+            <Route path="/room-status" element={
+              <div className="min-h-screen bg-background">
+                <Navigation />
+                <RoomStatus />
+              </div>
+            } />
+            
+            {/* Quick Index Lookup - Public access for validation */}
+            <Route path="/index-lookup" element={
+              <div className="min-h-screen bg-background">
+                <Navigation />
+                <IndexLookup />
+              </div>
+            } />
+            
+            {/* API Test - Temporary for debugging */}
+            <Route path="/api-test" element={
+              <div className="min-h-screen bg-background">
+                <Navigation />
+                <ApiTest />
+              </div>
+            } />
+            
             <Route path="/login" element={<Login />} />
             
             {/* Admin routes with admin layout - Protected */}
@@ -67,6 +104,7 @@ const App = () => (
                     <Route path="students" element={<StudentManagement />} />
                     <Route path="colleges" element={<Colleges />} />
                     <Route path="departments" element={<Departments />} />
+                    <Route path="rooms" element={<RoomManagement />} />
                     <Route path="reports" element={<Reports />} />
                     <Route path="settings" element={<Settings />} />
                   </Routes>

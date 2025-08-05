@@ -89,6 +89,7 @@ const Register = () => {
   };
 
   const handlePhotoCapture = (blob: Blob, faceDetected: boolean) => {
+    console.log('Photo captured:', { blob, size: blob.size, type: blob.type, faceDetected });
     setFormData(prev => ({ ...prev, photo: blob }));
     toast({
       title: "Photo captured successfully",
@@ -99,7 +100,7 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
+    // Enhanced Validation based on backend requirements
     const requiredFields = ['firstName', 'lastName', 'studentId', 'indexNumber', 'collegeId', 'departmentId', 'email'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof StudentFormData]);
 
@@ -112,21 +113,21 @@ const Register = () => {
       return;
     }
 
-    // Student ID validation (8 digits)
+    // Student ID validation (exactly 8 digits)
     if (!/^\d{8}$/.test(formData.studentId)) {
       toast({
         title: "Invalid Student ID",
-        description: "Student ID must be exactly 8 digits.",
+        description: "Student ID must be exactly 8 digits (e.g., 12345678)",
         variant: "destructive",
       });
       return;
     }
 
-    // Index Number validation (7 digits)
+    // Index Number validation (exactly 7 digits)
     if (!/^\d{7}$/.test(formData.indexNumber)) {
       toast({
-        title: "Invalid Index Number",
-        description: "Index Number must be exactly 7 digits.",
+        title: "Invalid Index Number", 
+        description: "Index Number must be exactly 7 digits (e.g., 1234567)",
         variant: "destructive",
       });
       return;
@@ -141,12 +142,32 @@ const Register = () => {
       return;
     }
 
-    // Email validation
+    // Enhanced Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address.",
+        title: "Invalid email format",
+        description: "Please enter a valid email address (e.g., student@example.com)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // UUID validation for college and department IDs
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(formData.collegeId)) {
+      toast({
+        title: "Invalid College Selection",
+        description: "Please select a valid college from the dropdown.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!uuidRegex.test(formData.departmentId)) {
+      toast({
+        title: "Invalid Department Selection", 
+        description: "Please select a valid department from the dropdown.",
         variant: "destructive",
       });
       return;
@@ -170,10 +191,15 @@ const Register = () => {
       college_id: formData.collegeId,
       department_id: formData.departmentId,
       student_id: formData.studentId,
-      // Additional fields that might be useful
+      index_number: formData.indexNumber,
       ...(formData.middleName && { middle_name: formData.middleName }),
-      // Note: photo upload will be handled separately after student creation
+      ...(formData.photo && { photo: formData.photo }),
     };
+
+    console.log('Submitting student data:', {
+      ...studentData,
+      photo: studentData.photo ? { size: studentData.photo.size, type: studentData.photo.type } : null
+    });
 
     registerStudent.mutate(studentData, {
       onSuccess: (newStudent) => {
@@ -197,9 +223,33 @@ const Register = () => {
         });
       },
       onError: (error) => {
+        console.error('Registration error:', error);
+        
+        // Extract more specific error information
+        let errorMessage = "An error occurred during registration. Please try again.";
+        let errorTitle = "Registration failed";
+        
+        if (error.message) {
+          if (error.message.includes('CORS Error') || error.message.includes('Network Error')) {
+            errorTitle = "Connection Error";
+            errorMessage = "Unable to connect to the server. Please make sure the backend server is running and properly configured.";
+          } else if (error.message.includes('422')) {
+            errorTitle = "Validation Error";
+            errorMessage = "Please check all fields are filled correctly. Student ID must be 8 digits, Index Number must be 7 digits, and valid college/department must be selected.";
+          } else if (error.message.includes('400')) {
+            errorTitle = "Invalid Data";
+            errorMessage = "Some of the information provided is invalid. Please review and try again.";
+          } else if (error.message.includes('500')) {
+            errorTitle = "Server Error";
+            errorMessage = "There was a server error. Please try again later.";
+          } else {
+            errorMessage = error.message;
+          }
+        }
+        
         toast({
-          title: "Registration failed",
-          description: error.message || "An error occurred during registration. Please try again.",
+          title: errorTitle,
+          description: errorMessage,
           variant: "destructive",
         });
       },
@@ -418,9 +468,15 @@ const Register = () => {
                   requireFaceDetection={true}
                 />
                 <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                  <p className="text-xs text-primary text-center">
-                    Photo capture is required for registration. Ensure the student is looking directly at the camera with good lighting.
-                  </p>
+                  {formData.photo ? (
+                    <p className="text-xs text-green-600 text-center font-medium">
+                      ✓ Photo captured successfully! Ready for registration.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-primary text-center">
+                      Photo capture is required for registration. Ensure the student is looking directly at the camera with good lighting.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>

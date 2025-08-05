@@ -7,15 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BookOpen, Search, Plus, Edit, Trash2, Building2, User } from "lucide-react";
 import { DepartmentModal } from "@/components/modals/DepartmentModal";
 import { useToast } from "@/hooks/use-toast";
-
-interface Department {
-  id: string;
-  name: string;
-  college: string;
-  description?: string;
-  head?: string;
-  createdAt: string;
-}
+import { useDepartments, useDeleteDepartment, useCreateDepartment, useUpdateDepartment } from "@/hooks/useDepartments";
+import { useColleges } from "@/hooks/useColleges";
+import type { Department } from "@/types/api";
 
 const Departments = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -25,58 +19,35 @@ const Departments = () => {
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const { toast } = useToast();
 
-  // Mock data - in real app, fetch from backend
-  const [departments, setDepartments] = useState<Department[]>([
-    {
-      id: "1",
-      name: "Computer Science",
-      college: "College of Computing",
-      description: "Advanced computer science education with focus on algorithms and software development",
-      head: "Dr. John Smith",
-      createdAt: "2024-01-10",
-    },
-    {
-      id: "2",
-      name: "Information Technology",
-      college: "College of Computing",
-      description: "Practical IT skills and enterprise technology solutions",
-      head: "Dr. Sarah Johnson",
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "3",
-      name: "Civil Engineering",
-      college: "College of Engineering",
-      description: "Infrastructure design and construction engineering",
-      head: "Dr. Michael Brown",
-      createdAt: "2024-01-20",
-    },
-    {
-      id: "4",
-      name: "Business Administration",
-      college: "College of Business",
-      description: "Comprehensive business management and leadership training",
-      head: "Dr. Emily Davis",
-      createdAt: "2024-01-25",
-    },
-  ]);
+  // Fetch data from API
+  const { data: departments, isLoading: departmentsLoading, error: departmentsError, refetch } = useDepartments();
+  const { data: colleges } = useColleges();
+  const deleteDepartmentMutation = useDeleteDepartment();
+  const createDepartmentMutation = useCreateDepartment();
+  const updateDepartmentMutation = useUpdateDepartment();
 
-  const colleges = ["all", "College of Computing", "College of Engineering", "College of Business"];
+  const departmentsList = departments || [];
+  const collegesList = colleges || [];
 
-  const filteredDepartments = departments.filter(dept => {
+  // Create colleges options for filter
+  const collegeOptions = ["all", ...collegesList.map(college => college.name)];
+
+  const filteredDepartments = departmentsList.filter(dept => {
     const matchesSearch = dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         dept.college.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (dept.head && dept.head.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCollege = selectedCollege === "all" || dept.college === selectedCollege;
+                         (dept.description && dept.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (dept.department_head && dept.department_head.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesCollege = selectedCollege === "all" || 
+                          (collegesList.find(college => college.id === dept.college_id)?.name === selectedCollege);
     return matchesSearch && matchesCollege;
   });
 
   const stats = {
-    total: departments.length,
-    withHeads: departments.filter(d => d.head).length,
-    byCollege: colleges.slice(1).map(college => ({
-      name: college,
-      count: departments.filter(d => d.college === college).length
+    total: departmentsList.length,
+    withHeads: departmentsList.filter(d => d.department_head).length,
+    byCollege: collegesList.map(college => ({
+      name: college.name,
+      count: departmentsList.filter(d => d.college_id === college.id).length
     }))
   };
 
@@ -92,40 +63,100 @@ const Departments = () => {
     setModalOpen(true);
   };
 
-  const handleDeleteDepartment = (department: Department) => {
-    setDepartments(departments.filter(d => d.id !== department.id));
-    toast({
-      title: "Department deleted",
-      description: `${department.name} has been removed successfully.`,
-    });
+  const handleDeleteDepartment = async (department: Department) => {
+    try {
+      await deleteDepartmentMutation.mutateAsync(department.id);
+      refetch(); // Refetch the departments list
+      toast({
+        title: "Department Deleted",
+        description: `${department.name} has been removed successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete department. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleSubmitDepartment = (departmentData: Department) => {
-    if (modalMode === "create") {
-      const newDepartment = {
-        ...departmentData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString().split('T')[0],
-      };
-      setDepartments([...departments, newDepartment]);
+  const handleSubmitDepartment = async (departmentData: Department) => {
+    try {
+      if (modalMode === "create") {
+        // Create new department
+        const createData = {
+          name: departmentData.name,
+          college_id: departmentData.college_id,
+          description: departmentData.description,
+          department_head: departmentData.department_head
+        };
+        
+        await createDepartmentMutation.mutateAsync(createData);
+        toast({
+          title: "Department Created",
+          description: `${departmentData.name} has been added successfully.`,
+        });
+      } else {
+        // Update existing department
+        if (!selectedDepartment?.id) {
+          throw new Error("No department selected for update");
+        }
+        
+        const updateData = {
+          name: departmentData.name,
+          description: departmentData.description,
+          department_head: departmentData.department_head
+        };
+        
+        await updateDepartmentMutation.mutateAsync({
+          id: selectedDepartment.id,
+          data: updateData
+        });
+        
+        toast({
+          title: "Department Updated",
+          description: `${departmentData.name} has been updated successfully.`,
+        });
+      }
+      
+      setModalOpen(false);
+      refetch(); // Refresh the list
+      
+    } catch (error) {
+      console.error('Department operation failed:', error);
       toast({
-        title: "Department created",
-        description: `${departmentData.name} has been added successfully.`,
-      });
-    } else {
-      setDepartments(departments.map(d => 
-        d.id === selectedDepartment?.id ? { ...departmentData, id: d.id } : d
-      ));
-      toast({
-        title: "Department updated",
-        description: `${departmentData.name} has been updated successfully.`,
+        title: "Error",
+        description: `Failed to ${modalMode === "create" ? "create" : "update"} department. Please try again.`,
+        variant: "destructive",
       });
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {departmentsLoading && (
+        <div className="flex items-center justify-center py-8">
+          <p>Loading departments...</p>
+        </div>
+      )}
+      
+      {departmentsError && (
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded">
+          <p>Error loading departments: {departmentsError instanceof Error ? departmentsError.message : 'Unknown error'}</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()}
+            className="mt-2"
+          >
+            Retry
+          </Button>
+        </div>
+      )}
+
+      {!departmentsLoading && !departmentsError && (
+        <>
+          <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
             <BookOpen className="h-8 w-8 text-primary" />
@@ -212,7 +243,7 @@ const Departments = () => {
               onChange={(e) => setSelectedCollege(e.target.value)}
               className="px-3 py-2 border border-input rounded-md bg-background text-foreground"
             >
-              {colleges.map(college => (
+              {collegeOptions.map(college => (
                 <option key={college} value={college}>
                   {college === "all" ? "All Colleges" : college}
                 </option>
@@ -238,14 +269,27 @@ const Departments = () => {
                   <TableRow key={department.id}>
                     <TableCell className="font-medium">{department.name}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{department.college}</Badge>
+                      <Badge variant="outline">
+                        {collegesList.find(college => college.id === department.college_id)?.name || 'N/A'}
+                      </Badge>
                     </TableCell>
-                    <TableCell>{department.head || "Not assigned"}</TableCell>
+                    <TableCell className="max-w-xs">
+                      {department.department_head ? (
+                        <span className="font-medium text-foreground">
+                          {department.department_head}
+                        </span>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          No Head Assigned
+                        </Badge>
+                      )}
+                    </TableCell>
+
                     <TableCell className="max-w-xs">
                       <p className="truncate">{department.description || "No description"}</p>
                     </TableCell>
                     <TableCell>
-                      {new Date(department.createdAt).toLocaleDateString()}
+                      {department.created_at ? new Date(department.created_at).toLocaleDateString() : 'N/A'}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -291,6 +335,8 @@ const Departments = () => {
         department={selectedDepartment}
         mode={modalMode}
       />
+      </>
+      )}
     </div>
   );
 };
