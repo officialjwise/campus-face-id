@@ -34,18 +34,16 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
 # Add CORS middleware - DEVELOPMENT ONLY
-# Your frontend is running on port 8081!
+# Your frontend is running on port 8080!
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:8080",  # Original port
-        "http://localhost:8081",  # Current port your frontend is using
-        "http://127.0.0.1:8080",
-        "http://127.0.0.1:8081"
+        "http://localhost:8080",  # Your frontend port
+        "http://127.0.0.1:8080"
     ],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"],  # Allow all headers for multipart/form-data uploads
 )
 
 # Your existing routes...
@@ -189,3 +187,19 @@ async def create_student(
 ```
 
 Once you add this CORS configuration and restart your backend server, the registration should work! 🎉
+
+## 🔧 **Frontend Fix Applied (August 6, 2025):**
+
+**Issue**: The frontend was incorrectly setting `Content-Type: application/json` for FormData uploads.
+**Fix**: Updated API client to automatically detect FormData and skip Content-Type header setting.
+
+```typescript
+// Fixed in src/lib/api.ts
+const isFormData = options.body instanceof FormData;
+const config: RequestInit = {
+  headers: {
+    ...(!isFormData && { 'Content-Type': 'application/json' }),
+    // Let browser set Content-Type with boundary for FormData
+  }
+};
+```

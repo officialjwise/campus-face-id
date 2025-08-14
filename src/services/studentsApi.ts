@@ -12,19 +12,31 @@ import type {
 export const studentsApi = {
   // Register new student (Public)
   register: async (data: CreateStudentRequest): Promise<Student> => {
-    // If photo is included, use uploadStudentWithPhoto for multipart upload
+    // If photo is included, convert to base64 and send as JSON
     if (data.photo) {
-      const { photo, ...additionalData } = data;
+      const photoFile = data.photo as File;
       
-      // Convert all data to strings for additionalData
-      const stringData: Record<string, string> = {};
-      Object.entries(additionalData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          stringData[key] = value.toString();
-        }
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const base64Image = reader.result as string;
+            const { photo, ...studentData } = data;
+            
+            const requestData = {
+              ...studentData,
+              face_image: base64Image
+            };
+            
+            const result = await apiClient.post<Student>('/students/', requestData);
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read image file'));
+        reader.readAsDataURL(photoFile);
       });
-      
-      return apiClient.uploadStudentWithPhoto<Student>('/students/', photo as File, stringData);
     } else {
       // Regular JSON request without photo
       const { photo, ...jsonData } = data;

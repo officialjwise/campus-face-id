@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FormData CORS Test</title>
+</head>
+<body>
+    <h1>FormData Upload Test</h1>
+    <input type="file" id="fileInput" accept="image/*">
+    <button onclick="testFormDataUpload()">Test FormData Upload</button>
+    <div id="result"></div>
+
+    <script>
+        async function testFormDataUpload() {
+            const resultDiv = document.getElementById('result');
+            const fileInput = document.getElementById('fileInput');
+            
+            if (!fileInput.files[0]) {
+                resultDiv.innerHTML = '<p style="color: orange;">Please select a file first</p>';
+                return;
+            }
+
+            try {
+                console.log('Testing FormData upload from:', window.location.origin);
+                
+                const formData = new FormData();
+                formData.append('face_image', fileInput.files[0]);
+                formData.append('student_id', '12345678');
+                formData.append('index_number', '1234567');
+                formData.append('first_name', 'Test');
+                formData.append('last_name', 'User');
+                formData.append('email', 'test@test.com');
+                formData.append('college_id', '12345678-1234-1234-1234-123456789012');
+                formData.append('department_id', '12345678-1234-1234-1234-123456789012');
+                
+                console.log('FormData prepared, making request...');
+                
+                const response = await fetch('http://localhost:8000/students/', {
+                    method: 'POST',
+                    mode: 'cors',
+                    body: formData
+                    // Note: No Content-Type header set - browser will set it automatically
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                const result = await response.text();
+                resultDiv.innerHTML = '<h3>Response:</h3><pre>' + result + '</pre>';
+                
+            } catch (error) {
+                console.error('Upload Error:', error);
+                resultDiv.innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>

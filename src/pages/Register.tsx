@@ -22,7 +22,7 @@ interface StudentFormData {
   departmentId: string;
   departmentName: string;
   email: string;
-  photo?: Blob;
+  photo: Blob;
 }
 
 const Register = () => {
@@ -38,6 +38,7 @@ const Register = () => {
     departmentId: "",
     departmentName: "",
     email: "",
+    photo: new Blob(),
   });
 
   // API hooks
@@ -220,6 +221,7 @@ const Register = () => {
           departmentId: "",
           departmentName: "",
           email: "",
+          photo: new Blob(),
         });
       },
       onError: (error) => {
