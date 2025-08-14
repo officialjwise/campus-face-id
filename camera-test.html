@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Test</title>
+</head>
+<body>
+    <h1>Basic Camera Test</h1>
+    <button onclick="startCamera()">Start Camera</button>
+    <button onclick="stopCamera()">Stop Camera</button>
+    <br><br>
+    <video id="video" width="640" height="480" autoplay muted playsinline></video>
+    <br><br>
+    <div id="logs" style="height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; font-family: monospace;"></div>
+
+    <script>
+        let stream = null;
+        const video = document.getElementById('video');
+        const logs = document.getElementById('logs');
+
+        function log(message) {
+            console.log(message);
+            logs.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        async function startCamera() {
+            try {
+                log('Starting camera...');
+                
+                if (!navigator.mediaDevices) {
+                    throw new Error('navigator.mediaDevices not supported');
+                }
+
+                if (!navigator.mediaDevices.getUserMedia) {
+                    throw new Error('getUserMedia not supported');
+                }
+
+                log('Browser supports getUserMedia');
+
+                const constraints = {
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    }
+                };
+
+                log('Requesting camera access...');
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                log('Stream obtained');
+                log('Video tracks: ' + stream.getVideoTracks().length);
+                
+                if (stream.getVideoTracks().length === 0) {
+                    throw new Error('No video tracks in stream');
+                }
+
+                video.srcObject = stream;
+                
+                video.onloadedmetadata = () => {
+                    log('Video metadata loaded');
+                    log('Video dimensions: ' + video.videoWidth + 'x' + video.videoHeight);
+                };
+
+                video.oncanplay = () => {
+                    log('Video can play');
+                };
+
+                video.onplay = () => {
+                    log('Video started playing');
+                };
+
+                video.onerror = (e) => {
+                    log('Video error: ' + e);
+                };
+
+                await video.play();
+                log('Video play() succeeded');
+
+            } catch (err) {
+                log('Error: ' + err.message);
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => {
+                    track.stop();
+                    log('Stopped track: ' + track.kind);
+                });
+                stream = null;
+            }
+            video.srcObject = null;
+            log('Camera stopped');
+        }
+    </script>
+</body>
+</html>

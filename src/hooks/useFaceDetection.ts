@@ -22,13 +22,23 @@ export const useFaceDetection = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('Loading face detection models...');
       const MODEL_URL = '/models';
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-      ]);
+      
+      console.log('Loading TinyFaceDetector...');
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      console.log('TinyFaceDetector loaded');
+      
+      console.log('Loading FaceRecognitionNet...');
+      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      console.log('FaceRecognitionNet loaded');
+      
+      console.log('Loading FaceLandmark68Net...');
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      console.log('FaceLandmark68Net loaded');
+      
       setModelsLoaded(true);
+      console.log('All models loaded successfully');
     } catch (err) {
       console.error("Failed to load face detection models:", err);
       setError("Failed to load face detection models");
@@ -46,12 +56,21 @@ export const useFaceDetection = () => {
     }
 
     try {
+      console.log('Starting face detection...');
+      console.log('Input element:', input.tagName, {
+        width: input instanceof HTMLVideoElement ? input.videoWidth : input.width,
+        height: input instanceof HTMLVideoElement ? input.videoHeight : input.height,
+        readyState: input instanceof HTMLVideoElement ? input.readyState : 'N/A'
+      });
+
       const detections = await faceapi
         .detectAllFaces(input, new faceapi.TinyFaceDetectorOptions())
         .withFaceLandmarks()
         .withFaceDescriptors();
 
-      return detections.map(detection => ({
+      console.log('Raw detections:', detections);
+
+      const results = detections.map(detection => ({
         box: {
           x: detection.detection.box.x,
           y: detection.detection.box.y,
@@ -62,6 +81,9 @@ export const useFaceDetection = () => {
         landmarks: detection.landmarks,
         descriptor: detection.descriptor,
       }));
+
+      console.log('Processed results:', results);
+      return results;
     } catch (err) {
       console.error("Face detection error:", err);
       throw err;
